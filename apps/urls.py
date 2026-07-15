@@ -255,4 +255,12 @@ urlpatterns =[
     path('categorie/ajouter/', views.ajouter_categorie, name='ajouter_categorie'),
     path('equipements/', views.liste_equipements, name='liste_equipements'),
     path('equipement/ajouter/', views.ajouter_equipement, name='ajouter_equipement'),
+
+    # =========================================
+    # ARCHIVAGE 
+    #
+    path('patient/<int:patient_id>/uploader-archive/', views.uploader_archive_pdf, name='uploader_archive'),
+    path('patient/<int:patient_id>/archives/', views.liste_archives_patient, name='liste_archives_patient'),
+    path('archives/registre/', views.toutes_les_archives, name='toutes_les_archives'),
+
  ]

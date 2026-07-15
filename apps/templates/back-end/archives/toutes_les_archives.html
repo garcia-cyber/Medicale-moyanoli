@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="fr">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+        <title>Moyanoli - Registre des Archives</title>
+        {% include 'back-end/includes/css.html' %}
+    </head>
+    <body>
+        <div class="main-wrapper">
+            {% include 'back-end/includes/header.html' %}
+            {% include 'back-end/includes/sidebar.html' %}
+            
+            <div class="page-wrapper">
+                <div class="content container-fluid">
+                    <div class="page-header d-flex justify-content-between align-items-center">
+                        <h3 class="page-title">Registre Général des Archives (PDF)</h3>
+                        <span class="badge bg-danger text-white p-2">Session : {{ fonctionKey }}</span>
+                    </div>
+
+                    <!-- Barre de recherche -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body">
+                                    <form method="GET" action="" class="row g-3">
+                                        <div class="col-md-9">
+                                            <input type="text" name="q" class="form-control" placeholder="Rechercher par nom de patient..." value="{{ query }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button type="submit" class="btn btn-danger w-100">
+                                                <i class="fa fa-search"></i> Rechercher
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Liste des archives -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-header bg-danger text-white">Documents scannés et enregistrés</div>
+                                <div class="card-body">
+                                    {% if archives %}
+                                        <div class="table-responsive">
+                                            <table class="table table-striped custom-table mb-0 datatable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Code Patient</th>
+                                                        <th>Patient</th>
+                                                        <th>Nom de l'archive</th>
+                                                        <th>Date d'import</th>
+                                                        <th>Archivé par</th>
+                                                        <th class="text-right">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for archive in archives %}
+                                                        <tr>
+                                                            <td>#{{ archive.patient.id }}</td>
+                                                            <td><strong>{{ archive.patient.noms }}</strong></td>
+                                                            <td>
+                                                                <i class="fa fa-file-pdf-o text-danger mr-2"></i>
+                                                                {{ archive.pdf_file.name|cut:"patient_archives/" }}
+                                                            </td>
+                                                            <td>{{ archive.archived_at|date:"d/m/Y à H:i" }}</td>
+                                                            <td>{{ archive.archived_by.get_full_name|default:archive.archived_by.username }}</td>
+                                                            <td class="text-right">
+                                                                <!-- Ouvre le PDF scanné dans un nouvel onglet -->
+                                                                <a href="{{ archive.pdf_file.url }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                                    <i class="fa fa-eye"></i> Consulter le PDF
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-5">
+                                            <i class="fa fa-folder-open-o fa-4x text-muted mb-3"></i>
+                                            <h4 class="text-muted">Aucun document ne correspond à votre recherche.</h4>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% include 'back-end/includes/js.html' %}
+    </body>
+</html>

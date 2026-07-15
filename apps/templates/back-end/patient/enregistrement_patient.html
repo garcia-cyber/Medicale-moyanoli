@@ -138,6 +138,12 @@
                                                                 <i class="fa fa-lock m-r-5"></i> Dossier bloqué
                                                             </a>
                                                         {% endif %}
+                                                        <a class="dropdown-item" href="{% url 'uploader_archive' patient.id %}" style="color: #e53e3e;">
+    <i class="fa fa-file-pdf-o m-r-5"></i> Archiver Dossier (PDF)
+</a>
+<a class="dropdown-item" href="{% url 'liste_archives_patient' patient.id %}" style="color: #4a5568;">
+    <i class="fa fa-archive m-r-5"></i> Voir les Archives (PDF)
+</a>
                                                     </div>
                                                 </div>
                                             </td>

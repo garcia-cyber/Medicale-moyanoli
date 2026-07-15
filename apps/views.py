@@ -5717,3 +5717,85 @@ def liste_equipements(request):
         'fonctionKey': fonction_key
     }
     return render(request, 'back-end/materiel/liste_equipements.html', context)
+#
+# ==================================================================================================
+# ENREGISTRES LES ARCHIVES DES PATIENTS
+# ===================================================================================================
+@login_required
+def uploader_archive_pdf(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    
+    if request.method == 'POST':
+        # Le formulaire reçoit POST et FILES pour intercepter le document PDF
+        form = PatientArchiveForm(request.POST, request.FILES)
+        if form.is_valid():
+            archive = form.save(commit=False)
+            archive.patient = patient
+            archive.archived_by = request.user
+            archive.save()
+            
+            messages.success(request, f"Le dossier scanné de {patient.noms} a été archivé avec succès !")
+            # Adapte 'detail_patient' avec le nom de ta vue de redirection réelle
+            return redirect('liste_archives_patient', patient_id=patient.id) 
+    else:
+        form = PatientArchiveForm()
+        
+    # Gestion de ton système de rôles utilisateur pour la sidebar
+    role_obj = Fonction.objects.filter(userKey=request.user).first()
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(request, 'back-end/archives/uploader_archive.html', {
+        'form': form,
+        'patient': patient, 
+        'fonctionKey': fonction_key
+    })
+
+
+#
+# ====================================================================================================
+# LISTES DES ARCHIVES 
+# ====================================================================================================
+@login_required
+def liste_archives_patient(request, patient_id):
+    patient = get_object_or_404(Patient, id=patient_id)
+    
+    # On récupère toutes les archives associées à ce patient
+    archives = PatientArchive.objects.filter(patient=patient).order_by('-archived_at')
+    
+    # Récupération du rôle pour la sidebar
+    role_obj = Fonction.objects.filter(userKey=request.user).first()
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(request, 'back-end/archives/liste_archives.html', {
+        'patient': patient,
+        'archives': archives,
+        'fonctionKey': fonction_key
+    })
+
+# 
+# ==================================================================================================
+# LISTE DES ARCHIVES POUR TOUS
+# ==================================================================================================
+@login_required
+def toutes_les_archives(request):
+    query = request.GET.get('q', '') # Récupère la recherche depuis la barre de recherche
+    
+    if query:
+        # Recherche par nom du patient
+        archives = PatientArchive.objects.filter(
+            patient__noms__icontains=query
+        ).order_by('-archived_at')
+    else:
+        # Affiche toutes les archives par défaut
+        archives = PatientArchive.objects.all().order_by('-archived_at')
+    
+    # Récupération du rôle pour la sidebar (Médecin, Infirmier, etc.)
+    role_obj = Fonction.objects.filter(userKey=request.user).first()
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(request, 'back-end/archives/toutes_les_archives.html', {
+        'archives': archives,
+        'query': query,
+        'fonctionKey': fonction_key
+    })
+

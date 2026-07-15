@@ -1307,3 +1307,76 @@ class PatientArchive(models.Model):
 
     def __str__(self):
         return f"Archive de {self.patient.noms} - {self.archived_at.strftime('%d/%m/%Y %H:%M')}"
+
+
+# ==========================================
+# 1. LES SHIFTS (QUARTS DE TRAVAIL)
+# ==========================================
+class Shift(models.Model):
+    libelle = models.CharField(max_length=100, verbose_name="Nom du shift") # ex: Matin, Après-midi, Garde Nuit
+    heure_debut = models.TimeField(verbose_name="Heure de début attendue")
+    heure_fin = models.TimeField(verbose_name="Heure de fin attendue")
+    marge_retard = models.IntegerField(default=15, verbose_name="Marge de retard (en minutes)")
+
+    def __str__(self):
+        return f"{self.libelle} ({self.heure_debut.strftime('%H:%M')} - {self.heure_fin.strftime('%H:%M')})"
+
+
+# ==========================================
+# 2. LE PLANNING (HORAIRE ATTENDU)
+# ==========================================
+class Planning(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="plannings", verbose_name="Agent")
+    shift = models.ForeignKey(Shift, on_delete=models.CASCADE, verbose_name="Shift")
+    date = models.DateField(verbose_name="Date planifiée")
+
+    class Meta:
+        unique_together = ('user', 'date') # Un agent ne peut avoir qu'un seul shift par jour
+        ordering = ['-date', 'user']
+
+    def __str__(self):
+        return f"{self.user.get_full_name() or self.user.username} - {self.date} ({self.shift.libelle})"
+
+
+# ==========================================
+# 3. LE POINTAGE / PRÉSENCE (RÉEL)
+# ==========================================
+class Presence(models.Model):
+    STATUT_CHOICES = [
+        ('PRESENT', 'Présent (À l\'heure)'),
+        ('RETARD', 'En Retard'),
+        ('ABSENT', 'Absent'),
+    ]
+
+    planning = models.OneToOneField(Planning, on_delete=models.CASCADE, related_name="presence", verbose_name="Planning associé")
+    heure_arrivee = models.TimeField(null=True, blank=True, verbose_name="Heure d'arrivée réelle")
+    heure_depart = models.TimeField(null=True, blank=True, verbose_name="Heure de départ réelle")
+    statut = models.CharField(max_length=15, choices=STATUT_CHOICES, default='ABSENT')
+    note = models.TextField(blank=True, null=True, verbose_name="Commentaires/Justifications")
+
+    def __str__(self):
+        return f"Présence de {self.planning.user.username} le {self.planning.date} - {self.get_statut_display()}"
+
+    def calculer_statut(self):
+        """
+        Calcule automatiquement si l'agent est à l'heure ou en retard 
+        par rapport à l'heure de début de son shift et la marge autorisée.
+        """
+        if not self.heure_arrivee:
+            self.statut = 'ABSENT'
+            return
+
+        # On compare l'heure réelle d'arrivée avec l'heure théorique du shift
+        heure_theorique = self.planning.shift.heure_debut
+        marge = self.planning.shift.marge_retard
+
+        # Conversion en minutes pour simplifier le calcul
+        minutes_theorique = heure_theorique.hour * 60 + heure_theorique.minute
+        minutes_reelle = self.heure_arrivee.hour * 60 + self.heure_arrivee.minute
+
+        limite_retard = minutes_theorique + marge
+
+        if minutes_reelle > limite_retard:
+            self.statut = 'RETARD'
+        else:
+            self.statut = 'PRESENT'

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="fr">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+        <title>Moyanoli - Archivage Patient</title>
+        {% include 'back-end/includes/css.html' %}
+    </head>
+    <body>
+        <div class="main-wrapper">
+            {% include 'back-end/includes/header.html' %}
+            {% include 'back-end/includes/sidebar.html' %}
+            
+            <div class="page-wrapper">
+                <div class="content container-fluid">
+                    <div class="page-header d-flex justify-content-between align-items-center">
+                        <h3 class="page-title">Archiver Dossier de : {{ patient.noms }}</h3>
+                        <a href="" class="btn btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Retour au dossier
+                        </a>
+                    </div>
+
+                    <!-- L'enctype="multipart/form-data" est CRUCIAL ici pour uploader le PDF scanné -->
+                    <form method="POST" enctype="multipart/form-data" id="formArchivage">
+                        {% csrf_token %}
+                        <div class="row">
+                            <!-- Section gauche : Détails et instructions -->
+                            <div class="col-lg-7">
+                                <div class="card shadow-sm border-0">
+                                    <div class="card-header bg-danger text-white">Consignes d'archivage</div>
+                                    <div class="card-body">
+                                        <p class="mb-4">
+                                            Vous utilisez notre nouveau système de gestion. Pour conserver l'historique de ce patient, veuillez numériser son ancien dossier papier au format <strong>PDF uniquement</strong> puis chargez-le via le formulaire ci-contre.
+                                        </p>
+                                        <table class="table table-bordered">
+                                            <tbody>
+                                                <tr>
+                                                    <th>Code Patient</th>
+                                                    <td>#{{ patient.id }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Identité du Patient</th>
+                                                    <td>{{ patient.noms }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Opérateur en charge</th>
+                                                    <td>{{ request.user.get_full_name|default:request.user.username }} ({{ fonctionKey }})</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div class="alert alert-warning mt-3 mb-0">
+                                            <i class="fa fa-exclamation-triangle"></i> Assurez-vous que le document scanné est parfaitement lisible avant de finaliser l'enregistrement.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section droite : Zone d'upload du document -->
+                            <div class="col-lg-5">
+                                <div class="card shadow-sm border-danger">
+                                    <div class="card-body">
+                                        <h5 class="text-danger mb-4"><i class="fa fa-file-pdf"></i> Importer le document scanné</h5>
+                                        
+                                        <div class="form-group mb-4">
+                                            <label class="form-label fw-bold">Sélectionner le fichier PDF</label>
+                                            <!-- Utilisation du champ de formulaire Django généré dans forms.py -->
+                                            {{ form.pdf_file }}
+                                            
+                                            {% if form.pdf_file.errors %}
+                                                <div class="text-danger small mt-2">
+                                                    {{ form.pdf_file.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        <button type="submit" id="btn_submit" class="btn btn-danger btn-block w-100">
+                                            <i class="fa fa-upload"></i> Enregistrer le dossier dans le système
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% include 'back-end/includes/js.html' %}
+    </body>
+</html>
