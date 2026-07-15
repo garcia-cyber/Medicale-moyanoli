@@ -2,18 +2,20 @@ import os
 from pathlib import Path
 
 # --- CHEMINS ---
-# BASE_DIR pointe vers la racine de ton projet (là où se trouve manage.py)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- SÉCURITÉ ---
-# Sur Render, ajoute une variable d'environnement SECRET_KEY
+# Clé secrète : prend celle de Render, sinon utilise une clé locale par défaut
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-temporary-key')
 
-# DEBUG est False sur Render pour la sécurité
+# DEBUG est True en local, mais devient False automatiquement sur Render (grâce à la variable d'env)
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-# Autorise ton site Render et le local
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.onrender.com']
+# En prod (DEBUG=False), on restreint les hôtes. En local, on accepte tout.
+if not DEBUG:
+    ALLOWED_HOSTS = ['medical-moyanoli.onrender.com', '.onrender.com'] # Remplace par ton vrai nom de domaine Render
+else:
+    ALLOWED_HOSTS = ['*'] # Permet de tester sur localhost, 127.0.0.1 ou ton IP locale (192.168.1.77)
 
 # --- APPLICATIONS ---
 INSTALLED_APPS = [
@@ -34,7 +36,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 # --- MIDDLEWARE ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Pour gérer les fichiers statiques sur Render
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Gère les fichiers statiques en prod
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -64,34 +66,43 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'conf.wsgi.application'
 
-# --- BASE DE DONNÉES (À LA RACINE) ---
-# Le fichier db.sqlite3 sera créé directement à côté de manage.py
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# --- BASE DE DONNÉES ---
+# Utilise SQLite en local pour développer facilement, et PostgreSQL en production
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    # Configuration pour la production (Render).
+    # Il est fortement conseillé d'utiliser dj-database-url pour lire l'URL de base de données Render.
+    import dj_database_url
+   
 
 # --- VALIDATION DES MOTS DE PASSE ---
-AUTH_PASSWORD_VALIDATORS = [
-    # {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    # {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    # {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    # {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
+# Désactivé en local (plus simple pour créer des comptes tests) mais activé en Prod
+if not DEBUG:
+    AUTH_PASSWORD_VALIDATORS = [
+        {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+        {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+        {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+        {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    ]
+else:
+    AUTH_PASSWORD_VALIDATORS = []
 
 # --- INTERNATIONALISATION ---
 LANGUAGE_CODE = 'fr-fr'
-TIME_ZONE = 'Africa/Kinshasa'  # <--- Très important pour avoir l'heure de Kinshasa
+TIME_ZONE = 'Africa/Kinshasa'  # Heure de Kinshasa
 USE_I18N = True
 USE_L10N = True
 USE_TZ = False
 
-# Ajoutez-le juste ici
 DATE_INPUT_FORMATS = [
     '%d/%m/%Y', # Format jour/mois/année (ex: 15/05/2026)
-    '%Y-%m-%d', # Format standard base de données
+    '%Y-%m-%d', # Format standard de la base de données
 ]
 
 # --- FICHIERS STATIQUES (CSS, JS) ---
@@ -99,30 +110,32 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Whitenoise pour la compression en production
+# Whitenoise gère le stockage uniquement en production (quand DEBUG est False)
 if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # --- FICHIERS MÉDIAS (Photos, Uploads) ---
-MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
-
-
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # --- AUTHENTIFICATION --- 
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGIN_URL = '/login/'
 LOGOUT_REDIRECT_URL = '/home/'
 
-# --- SÉCURITÉ PROD ---
+# --- SÉCURITÉ EN PRODUCTION ---
 if not DEBUG:
+    # Active ces options si ton site est bien configuré en HTTPS (fortement recommandé sur Render !)
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_SSL_REDIRECT = True
     X_FRAME_OPTIONS = 'DENY'
+else:
+    # Sécurité relâchée pour le développement local
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

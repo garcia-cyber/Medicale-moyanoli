@@ -509,3 +509,14 @@ class InterventionMaintenanceAdmin(admin.ModelAdmin):
     list_filter = ['repare', 'date_panne']
     search_fields = ['equipement__nom', 'technicien']
     list_editable = ['repare']
+
+@admin.register(PatientArchive)
+class PatientArchiveAdmin(admin.ModelAdmin):
+    # Colonnes affichées dans la liste des archives
+    list_display = ('patient', 'archived_at', 'archived_by', 'pdf_file')
+    
+    # Filtres sur le côté
+    list_filter = ('archived_at', 'archived_by')
+    
+    # Barre de recherche (recherche sur le nom du patient lié)
+    search_fields = ('patient__noms',)

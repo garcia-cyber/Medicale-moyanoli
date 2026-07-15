@@ -2130,7 +2130,7 @@ def enregistrer_ordonnance_view(request, triage_id):
     consultation = get_object_or_404(Consultation, triage=triage)
     
     # Récupération des examens liés à cette consultation
-    examens_termines = Examen.objects.filter(consultation=consultation, statut='TERMINE')
+    examens_termines = DemandeExamen.objects.filter(consultation=consultation, statut='TERMINE')
 
     if request.method == 'POST':
         form = OrdonnanceForm(request.POST)
@@ -4810,35 +4810,48 @@ def saisir_signes_vitaux(request, session_id):
 # ===============================================================================================
 @login_required
 def ajouter_paiement_dette(request, paiement_id):
-    paiement = get_object_or_404(Paiement, id=paiement_id)
-    
-    # On récupère le taux actuel (depuis ton modèle de configuration)
+    role = Fonction.objects.select_related('fonctionKey').filter(userKey=request.user).first()
+    hopital_user = role.hopital if role else None
+    fonctionKey = role.fonctionKey.roleName if role and role.fonctionKey else None
+
+    paiement = get_object_or_404(Paiement, id=paiement_id, hopital=hopital_user)
     taux = Decimal(str(ConfigurationHopital.get_taux()))
 
     if request.method == 'POST':
-        montant_saisi = Decimal(str(request.POST.get('montant')))
-        devise_paiement = request.POST.get('devise_paiement') # USD ou CDF
+        montant_saisi = Decimal(str(request.POST.get('montant') or '0'))
+        devise_paiement = request.POST.get('devise_paiement')
+        devise_dette = paiement.devise
 
-        # 1. Conversion du montant saisi en USD (la devise de la vente)
-        montant_en_usd = montant_saisi
-        if devise_paiement == 'CDF':
-            montant_en_usd = montant_saisi / taux
+        montant_converti = montant_saisi
 
-        # 2. Vérification
-        if montant_en_usd > paiement.reste_a_payer:
-            messages.error(request, f"Le montant saisi ({montant_saisi} {devise_paiement}) dépasse la dette restante en USD.")
+        if devise_paiement != devise_dette:
+            if devise_paiement == 'USD' and devise_dette == 'CDF':
+                montant_converti = montant_saisi * taux
+            elif devise_paiement == 'CDF' and devise_dette == 'USD':
+                montant_converti = montant_saisi / taux
+
+        montant_converti = montant_converti.quantize(Decimal('0.01'))
+
+        if montant_converti > paiement.reste_a_payer:
+            messages.error(
+                request,
+                f"Le montant saisi ({montant_saisi} {devise_paiement}) dépasse la dette restante ({paiement.reste_a_payer} {devise_dette})."
+            )
             return redirect('liste_ventes')
 
-        # 3. Sauvegarde
         with transaction.atomic():
-            paiement.reste_a_payer -= montant_en_usd
-            paiement.montant_verse += montant_en_usd
+            paiement.reste_a_payer -= montant_converti
+            paiement.montant_verse += montant_converti
             paiement.save()
-            
-            messages.success(request, "Dette mise à jour avec succès.")
-            
+
+        messages.success(request, "Dette mise à jour avec succès.")
         return redirect('liste_ventes')
 
+    return render(request, 'back-end/pharmacie/ajouter_paiement_dette.html', {
+        'paiement': paiement,
+        'taux': taux,
+        'fonctionKey': fonctionKey
+    })
 
 # 
 # ===========================================================================================================

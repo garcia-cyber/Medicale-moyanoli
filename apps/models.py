@@ -5,6 +5,7 @@ from decimal import Decimal  # Ajout crucial pour la sécurité des calculs fina
 from django.utils import timezone 
 from django.db.models import Sum
 from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings 
 from django.db import transaction
 
@@ -1257,3 +1258,52 @@ class InterventionMaintenance(models.Model):
 
     def __str__(self):
         return f"Maintenance sur {self.equipement.nom} - {'Réparé' if self.repare else 'En cours'}"
+    
+
+
+# ================================================================================
+#
+# archivage des informations 
+class PatientArchive(models.Model):
+    """
+    Modèle gérant l'historique d'archivage des dossiers patients en format PDF.
+    Chaque fois qu'un utilisateur archive un dossier, une nouvelle instance
+    est enregistrée ici avec le document PDF associé.
+    """
+    # Liaison avec le patient existant (Clé étrangère)
+    patient = models.ForeignKey(
+        'Patient', # Utilisez la chaîne 'Patient' ou le modèle importé
+        on_delete=models.CASCADE, 
+        related_name='archives',
+        verbose_name="Patient concerné"
+    )
+    
+    # Date et heure de la création de l'archive (automatique)
+    archived_at = models.DateTimeField(
+        auto_now_add=True, 
+        verbose_name="Date d'archivage"
+    )
+    
+    # Le fichier PDF sauvegardé physiquement sur le serveur
+    # Les fichiers seront rangés dans un dossier 'patient_archives' au sein de votre dossier MEDIA_ROOT
+    pdf_file = models.FileField(
+        upload_to='patient_archives/', 
+        verbose_name="Fichier PDF de l'archive"
+    )
+    
+    # L'utilisateur (médecin, secrétaire...) ayant déclenché l'archivage
+    archived_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Archivé par"
+    )
+
+    class Meta:
+        verbose_name = "Archive de Patient"
+        verbose_name_plural = "Archives de Patients"
+        ordering = ['-archived_at'] # Affiche les archives de la plus récente à la plus ancienne
+
+    def __str__(self):
+        return f"Archive de {self.patient.noms} - {self.archived_at.strftime('%d/%m/%Y %H:%M')}"

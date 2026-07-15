@@ -636,3 +636,18 @@ class SigneVitalForm(forms.ModelForm):
             'frequence_respiratoire': 'Fréquence Respiratoire (RPM)',
             'saturation_oxygene': 'Saturation Oxygène (%)',
         }
+
+
+# ===============================================================================
+# ARCHIVAGE 
+#
+class PatientArchiveForm(forms.ModelForm):
+    class Meta:
+        model = PatientArchive
+        fields = ['pdf_file']  # On demande uniquement le fichier PDF scanné
+        widgets = {
+            'pdf_file': forms.FileInput(attrs={
+                'class': 'form-control', 
+                'accept': '.pdf' # Force l'utilisateur à ne choisir que des PDF
+            }),
+        }
