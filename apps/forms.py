@@ -97,18 +97,57 @@ class ModifierUserForm(forms.ModelForm):
 class PrestationForm(forms.ModelForm):
     class Meta:
         model = Prestation
-        # 1. On ajoute 'valeur_normale' dans la liste des champs
-        fields = ['libelle', 'categorie', 'prix', 'valeur_normale']
-        
-        # 2. On configure le widget Bootstrap pour le nouveau champ
+        fields = [
+            'libelle',
+            'code',
+            'categorie',
+            'prix',
+            'valeur_normale',
+            'duree_typique_minutes',
+            'debit_sang_reference_ml_min',
+            'debit_dialysat_reference_ml_min',
+            'actif',
+        ]
+
         widgets = {
-            'libelle': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Goutte Épaisse'}),
-            'categorie': forms.Select(attrs={'class': 'form-control', 'id': 'id_categorie'}),
-            'prix': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'libelle': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Goutte Épaisse ou Hémodialyse 4h',
+            }),
+            'code': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: HD4H, DPJ, etc.',
+            }),
+            'categorie': forms.Select(attrs={
+                'class': 'form-control',
+                'id': 'id_categorie',
+            }),
+            'prix': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+            }),
             'valeur_normale': forms.TextInput(attrs={
-                'class': 'form-control', 
+                'class': 'form-control',
                 'placeholder': 'Ex: 70-110 mg/dl ou Négatif',
-                'id': 'id_valeur_normale'
+                'id': 'id_valeur_normale',
+            }),
+            'duree_typique_minutes': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 240',
+                'id': 'id_duree_typique_minutes',
+            }),
+            'debit_sang_reference_ml_min': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 300',
+                'id': 'id_debit_sang_reference_ml_min',
+            }),
+            'debit_dialysat_reference_ml_min': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 500',
+                'id': 'id_debit_dialysat_reference_ml_min',
+            }),
+            'actif': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
             }),
         }
 
@@ -119,18 +158,29 @@ class PrestationForm(forms.ModelForm):
             raise forms.ValidationError("Cette prestation existe déjà dans votre catalogue.")
         return libelle
 
-    # 3. Optionnel : Sécurité bonus au niveau du formulaire
     def clean(self):
         cleaned_data = super().clean()
         categorie = cleaned_data.get('categorie')
-        valeur_normale = cleaned_data.get('valeur_normale')
 
-        # Si l'utilisateur a écrit quelque chose mais que ce n'est pas du LABO, on nettoie la donnée
-        if categorie != 'LABO' and valeur_normale:
+        # --- Gestion LABO ---
+        valeur_normale = cleaned_data.get('valeur_normale')
+        if categorie != 'LABO':
+            # On force à None si ce n'est pas LABO
             cleaned_data['valeur_normale'] = None
-            
+
+        # --- Gestion DIALYSE ---
+        if categorie != 'DIALYSE':
+            # On nettoie les champs spécifiques dialyse si ce n'est pas la catégorie DIALYSE
+            cleaned_data['duree_typique_minutes'] = None
+            cleaned_data['debit_sang_reference_ml_min'] = None
+            cleaned_data['debit_dialysat_reference_ml_min'] = None
+
         return cleaned_data
 
+#
+#
+# ==========================================================================================================================================
+# 
 
 class ConfigurationHopitalForm(forms.ModelForm):
     class Meta:
@@ -650,4 +700,245 @@ class PatientArchiveForm(forms.ModelForm):
                 'class': 'form-control', 
                 'accept': '.pdf' # Force l'utilisateur à ne choisir que des PDF
             }),
+        }
+
+
+
+# ======================================================================================
+#
+class PrescriptionDialyseForm(forms.ModelForm):
+    patient_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Rechercher un patient par nom..."
+        })
+    )
+
+    class Meta:
+        model = PrescriptionDialyse
+        fields = [
+            "patient",
+            "nom_patient_externe",
+            "sexe_patient_externe",
+            "age_patient_externe",
+            "telephone_patient_externe",
+            "prestation",
+            "date_debut",
+            "date_fin",
+            "frequence_par_semaine",
+            "duree_seance_minutes",
+            "objectif_poids_sec_kg",
+            "statut",
+            "remarques",
+            "active",
+        ]
+        widgets = {
+            "patient": forms.Select(attrs={"class": "form-control"}),
+            "nom_patient_externe": forms.TextInput(attrs={"class": "form-control", "placeholder": "Nom du patient externe"}),
+            "sexe_patient_externe": forms.Select(attrs={"class": "form-control"}),
+            "age_patient_externe": forms.TextInput(attrs={"class": "form-control", "placeholder": "Âge"}),
+            "telephone_patient_externe": forms.TextInput(attrs={"class": "form-control", "placeholder": "Téléphone"}),
+            "prestation": forms.Select(attrs={"class": "form-control"}),
+            "date_debut": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "date_fin": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "frequence_par_semaine": forms.NumberInput(attrs={"class": "form-control"}),
+            "duree_seance_minutes": forms.NumberInput(attrs={"class": "form-control"}),
+            "objectif_poids_sec_kg": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "statut": forms.Select(attrs={"class": "form-control"}),
+            "remarques": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        patient_queryset = kwargs.pop("patient_queryset", None)
+        super().__init__(*args, **kwargs)
+
+        if patient_queryset is not None:
+            self.fields["patient"].queryset = patient_queryset
+
+        self.fields["patient"].required = False
+        self.fields["nom_patient_externe"].required = False
+        self.fields["prestation"].required = True
+
+        self.fields["patient"].empty_label = "Choisir un patient"
+        self.fields["prestation"].empty_label = "Choisir une prestation"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        patient = cleaned_data.get("patient")
+        nom_externe = cleaned_data.get("nom_patient_externe")
+
+        if not patient and not nom_externe:
+            raise forms.ValidationError(
+                "Vous devez renseigner soit un patient du système, soit un patient externe."
+            )
+
+        if patient and nom_externe:
+            raise forms.ValidationError(
+                "Choisissez soit un patient du système, soit un patient externe, pas les deux."
+            )
+
+        return cleaned_data
+# ========================================================
+class PaiementDialyseForm(forms.ModelForm):
+    class Meta:
+        model = Paiement
+        fields = [
+            'montant_verse',
+            'montant_reduction',
+            'devise',
+        ]
+        widgets = {
+            'montant_verse': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'montant_reduction': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'devise': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def clean_montant_verse(self):
+        montant = self.cleaned_data.get('montant_verse') or Decimal('0.00')
+        if montant <= 0:
+            raise forms.ValidationError("Le montant versé doit être supérieur à zéro.")
+        return montant
+
+    def clean_montant_reduction(self):
+        reduction = self.cleaned_data.get('montant_reduction') or Decimal('0.00')
+        if reduction < 0:
+            raise forms.ValidationError("La réduction ne peut pas être négative.")
+        return reduction
+
+# ============================================================================================================
+#
+#
+class SeanceDialyseForm(forms.ModelForm):
+    class Meta:
+        model = SeanceDialyse
+        fields = [
+            "date_heure_debut",
+            "date_heure_fin",
+            "statut",
+            "duree_prevue_minutes",
+            "poids_cible_fin_seance_kg",
+            "poids_avant_kg",
+            "temperature_avant",
+            "pouls_avant",
+            "tension_avant",
+            "machine",
+            "filtre",
+            "debit_sang_ml_min",
+            "debit_dialysat_ml_min",
+            "anticoagulant",
+            "poids_apres_kg",
+            "temperature_apres",
+            "pouls_apres",
+            "tension_apres",
+            "uree_avant",
+            "uree_apres",
+            "creatinine_avant",
+            "creatinine_apres",
+            "facturee",
+        ]
+        widgets = {
+            "date_heure_debut": forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}),
+            "date_heure_fin": forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}),
+            "statut": forms.Select(attrs={"class": "form-control"}),
+            "duree_prevue_minutes": forms.NumberInput(attrs={"class": "form-control"}),
+            "poids_cible_fin_seance_kg": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "poids_avant_kg": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "temperature_avant": forms.NumberInput(attrs={"class": "form-control", "step": "0.1"}),
+            "pouls_avant": forms.NumberInput(attrs={"class": "form-control"}),
+            "tension_avant": forms.TextInput(attrs={"class": "form-control"}),
+            "machine": forms.TextInput(attrs={"class": "form-control"}),
+            "filtre": forms.TextInput(attrs={"class": "form-control"}),
+            "debit_sang_ml_min": forms.NumberInput(attrs={"class": "form-control"}),
+            "debit_dialysat_ml_min": forms.NumberInput(attrs={"class": "form-control"}),
+            "anticoagulant": forms.TextInput(attrs={"class": "form-control"}),
+            "poids_apres_kg": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "temperature_apres": forms.NumberInput(attrs={"class": "form-control", "step": "0.1"}),
+            "pouls_apres": forms.NumberInput(attrs={"class": "form-control"}),
+            "tension_apres": forms.TextInput(attrs={"class": "form-control"}),
+            "uree_avant": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "uree_apres": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "creatinine_avant": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "creatinine_apres": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "facturee": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+# ==============================================================================================================
+class ConsommationSeanceForm(forms.ModelForm):
+    class Meta:
+        model = ConsommationSeance
+        fields = ["consommable", "quantite", "date_utilisation", "prestation"]
+        widgets = {
+            "consommable": forms.Select(attrs={"class": "form-control"}),
+            "quantite": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "date_utilisation": forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}),
+            "prestation": forms.Select(attrs={"class": "form-control"}),
+        }
+
+# ================================================================================================
+class ConsommableDialyseForm(forms.ModelForm):
+    class Meta:
+        model = ConsommableDialyse
+        fields = ["nom", "reference", "categorie", "actif"]
+        labels = {
+            "nom": "Nom du consommable",
+            "reference": "Référence",
+            "categorie": "Catégorie",
+            "actif": "Actif",
+        }
+        widgets = {
+            "nom": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex: Filtre HF15"}),
+            "reference": forms.TextInput(attrs={"class": "form-control", "placeholder": "Référence"}),
+            "categorie": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ex: Filtres"}),
+            "actif": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+# ================================================================================================================
+class IncidentDialyseForm(forms.ModelForm):
+    class Meta:
+        model = IncidentDialyse
+        fields = [
+            "date_heure",
+            "type_incident",
+            "gravite",
+            "description",
+            "action_prise",
+            "soignant",
+        ]
+        widgets = {
+            "date_heure": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={
+                    "class": "form-control",
+                    "type": "datetime-local",
+                },
+            ),
+            "type_incident": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Ex: Hypotension",
+                }
+            ),
+            "gravite": forms.Select(attrs={"class": "form-select"}),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": "Décrire brièvement l'incident",
+                }
+            ),
+            "action_prise": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": "Action prise",
+                }
+            ),
+            "soignant": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Nom du soignant",
+                }
+            ),
         }

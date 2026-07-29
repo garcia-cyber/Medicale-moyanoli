@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Créer Séance Dialyse - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg-page: #f4f8fc;
+            --surface: #ffffff;
+            --line: #dbe5ef;
+            --line-soft: #edf2f7;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-soft: #eff6ff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --success-bg: #ecfdf5;
+            --success-text: #166534;
+            --warning-bg: #fff7ed;
+            --warning-text: #9a3412;
+            --danger-bg: #fef2f2;
+            --danger-text: #991b1b;
+        }
+
+        body {
+            background: var(--bg-page);
+            color: var(--text);
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: var(--bg-page);
+        }
+
+        .content {
+            padding-top: 24px;
+            padding-bottom: 24px;
+        }
+
+        .page-header { margin-bottom: 18px; }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dbeafe;
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.08);
+            font-size: 22px;
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 20px;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+        }
+
+        .btn-register:hover {
+            background: linear-gradient(135deg, var(--primary-dark), #1e40af);
+        }
+
+        .card, .panel-box {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .card-header {
+            background: #fff;
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 20px;
+            border-radius: 18px 18px 0 0;
+        }
+
+        .card-title {
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: .9rem;
+            margin: 0;
+        }
+
+        .section-box {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 18px;
+            background: #fff;
+        }
+
+        .section-title {
+            background: #f9fbff;
+            border-bottom: 1px solid var(--line-soft);
+            padding: 13px 16px;
+            font-weight: 800;
+            color: #123c74;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i { color: var(--primary); }
+
+        .section-body { padding: 16px; }
+
+        .form-group label, .form-check-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            border: 1px solid #d8e1ec;
+            border-radius: 12px;
+            min-height: 46px;
+            background: #fff;
+            box-shadow: none;
+        }
+
+        .form-control:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 0.18rem rgba(37, 99, 235, 0.08);
+        }
+
+        textarea.form-control { min-height: 110px; }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .info-item:last-child { border-bottom: none; }
+
+        .info-label {
+            color: var(--muted);
+            font-weight: 600;
+            min-width: 180px;
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: var(--text);
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .status-badge.active {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-badge.warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid #fed7aa;
+        }
+
+        .status-badge.danger {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid #fecaca;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .info-item {
+                flex-direction: column;
+            }
+            .info-value { text-align: left; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-play-circle"></i></span>
+                            Créer une séance de dialyse
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'prescriptions_dialyse' %}">Liste des prescriptions</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'prescription_dialyse_detail' prescription.pk %}">Détail prescription</a></li>
+                            <li class="breadcrumb-item active">Créer séance</li>
+                        </ul>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{% url 'prescription_dialyse_detail' prescription.pk %}" class="btn btn-outline-secondary btn-register">
+                            <i class="la la-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Nouvelle séance</h4>
+                    <p class="subtitle">Créer une séance à partir de la prescription sélectionnée.</p>
+                </div>
+
+                <div class="card-body">
+                    <div class="section-box">
+                        <div class="section-title"><i class="la la-file-text"></i> Prescription source</div>
+                        <div class="section-body">
+                            <div class="info-item">
+                                <div class="info-label">Patient</div>
+                                <div class="info-value">
+                                    {% if prescription.patient %}
+                                        {{ prescription.patient.noms }}
+                                    {% else %}
+                                        {{ prescription.nom_patient_externe|default:"-" }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Prestation</div>
+                                <div class="info-value">{{ prescription.prestation.libelle }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Montant total</div>
+                                <div class="info-value">{{ prescription.montant_total }} USD</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Statut</div>
+                                <div class="info-value">{{ prescription.get_statut_display }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                        <div class="section-box">
+                            <div class="section-title"><i class="la la-list"></i> Informations de séance</div>
+                            <div class="section-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.date_heure_debut.id_for_label }}">{{ form.date_heure_debut.label }}</label>
+                                        {{ form.date_heure_debut }}
+                                        {{ form.date_heure_debut.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.date_heure_fin.id_for_label }}">{{ form.date_heure_fin.label }}</label>
+                                        {{ form.date_heure_fin }}
+                                        {{ form.date_heure_fin.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.statut.id_for_label }}">{{ form.statut.label }}</label>
+                                        {{ form.statut }}
+                                        {{ form.statut.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.duree_prevue_minutes.id_for_label }}">{{ form.duree_prevue_minutes.label }}</label>
+                                        {{ form.duree_prevue_minutes }}
+                                        {{ form.duree_prevue_minutes.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.poids_cible_fin_seance_kg.id_for_label }}">{{ form.poids_cible_fin_seance_kg.label }}</label>
+                                        {{ form.poids_cible_fin_seance_kg }}
+                                        {{ form.poids_cible_fin_seance_kg.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.poids_avant_kg.id_for_label }}">{{ form.poids_avant_kg.label }}</label>
+                                        {{ form.poids_avant_kg }}
+                                        {{ form.poids_avant_kg.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.temperature_avant.id_for_label }}">{{ form.temperature_avant.label }}</label>
+                                        {{ form.temperature_avant }}
+                                        {{ form.temperature_avant.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.pouls_avant.id_for_label }}">{{ form.pouls_avant.label }}</label>
+                                        {{ form.pouls_avant }}
+                                        {{ form.pouls_avant.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.tension_avant.id_for_label }}">{{ form.tension_avant.label }}</label>
+                                        {{ form.tension_avant }}
+                                        {{ form.tension_avant.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.machine.id_for_label }}">{{ form.machine.label }}</label>
+                                        {{ form.machine }}
+                                        {{ form.machine.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.filtre.id_for_label }}">{{ form.filtre.label }}</label>
+                                        {{ form.filtre }}
+                                        {{ form.filtre.errors }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.debit_sang_ml_min.id_for_label }}">{{ form.debit_sang_ml_min.label }}</label>
+                                        {{ form.debit_sang_ml_min }}
+                                        {{ form.debit_sang_ml_min.errors }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.debit_dialysat_ml_min.id_for_label }}">{{ form.debit_dialysat_ml_min.label }}</label>
+                                        {{ form.debit_dialysat_ml_min }}
+                                        {{ form.debit_dialysat_ml_min.errors }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.anticoagulant.id_for_label }}">{{ form.anticoagulant.label }}</label>
+                                        {{ form.anticoagulant }}
+                                        {{ form.anticoagulant.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.poids_apres_kg.id_for_label }}">{{ form.poids_apres_kg.label }}</label>
+                                        {{ form.poids_apres_kg }}
+                                        {{ form.poids_apres_kg.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.temperature_apres.id_for_label }}">{{ form.temperature_apres.label }}</label>
+                                        {{ form.temperature_apres }}
+                                        {{ form.temperature_apres.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.pouls_apres.id_for_label }}">{{ form.pouls_apres.label }}</label>
+                                        {{ form.pouls_apres }}
+                                        {{ form.pouls_apres.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.tension_apres.id_for_label }}">{{ form.tension_apres.label }}</label>
+                                        {{ form.tension_apres }}
+                                        {{ form.tension_apres.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.uree_avant.id_for_label }}">{{ form.uree_avant.label }}</label>
+                                        {{ form.uree_avant }}
+                                        {{ form.uree_avant.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.uree_apres.id_for_label }}">{{ form.uree_apres.label }}</label>
+                                        {{ form.uree_apres }}
+                                        {{ form.uree_apres.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.creatinine_avant.id_for_label }}">{{ form.creatinine_avant.label }}</label>
+                                        {{ form.creatinine_avant }}
+                                        {{ form.creatinine_avant.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.creatinine_apres.id_for_label }}">{{ form.creatinine_apres.label }}</label>
+                                        {{ form.creatinine_apres }}
+                                        {{ form.creatinine_apres.errors }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label>{{ form.facturee.label }}</label>
+                                        <div class="form-check">
+                                            {{ form.facturee }}
+                                        </div>
+                                        {{ form.facturee.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box">
+                            <div class="section-title"><i class="la la-clipboard"></i> Validation</div>
+                            <div class="section-body">
+                                <div class="info-item">
+                                    <div class="info-label">Séance autorisée</div>
+                                    <div class="info-value">
+                                        {% if prescription.paiements.exists %}
+                                            <span class="status-badge active">Oui</span>
+                                        {% else %}
+                                            <span class="status-badge danger">Non</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Numéro automatique</div>
+                                    <div class="info-value">
+                                        <span class="status-badge warning">Généré automatiquement</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="actions-bar">
+                            <button type="submit" class="btn btn-primary btn-register">
+                                <i class="la la-check-circle"></i> Enregistrer la séance
+                            </button>
+                            <a href="{% url 'prescription_dialyse_detail' prescription.pk %}" class="btn btn-light btn-register">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Ajouter un paramétrage - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg: #eef5fb;
+            --surface: #ffffff;
+            --surface-2: #f8fbff;
+            --line: #d7e2ee;
+            --line-soft: #edf3f8;
+            --primary: #1f7ae0;
+            --primary-2: #1459a8;
+            --primary-soft: #eaf4ff;
+            --text: #17324f;
+            --muted: #6b7b8e;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #edf5fb 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .page-title {
+            font-size: 1.55rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-soft), #dbeeff);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cfe1f5;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .08);
+            font-size: 22px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(16, 24, 40, .05);
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 22px;
+        }
+
+        .card-title {
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .muted { color: var(--muted); }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #f3f7fb;
+            color: #35506b;
+            border: 1px solid #e1e9f2;
+            font-weight: 700;
+            font-size: .8rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 12px;
+            border-color: #d8e3ee;
+            padding: 10px 14px;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 .2rem rgba(31, 122, 224, .12);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 18px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .15);
+        }
+
+        .btn-register:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #1769c4, #124e94);
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--muted);
+        }
+
+        .section-box {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        label {
+            font-weight: 700;
+            color: #21415f;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-gear"></i></span>
+                            Ajouter un paramétrage
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'liste_seances_dialyse' %}">Séances de dialyse</a></li>
+                            <li class="breadcrumb-item active">Paramétrage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Séance #{{ seance.numero_seance }}</h4>
+                    <p class="muted mb-0">
+                        {% if seance.prescription.patient %}
+                            Patient : {{ seance.prescription.patient.noms }}
+                        {% else %}
+                            Patient : {{ seance.prescription.nom_patient_externe|default:"Patient externe" }}
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Intervalle de surveillance</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="minute_debut">Minute de début</label>
+                                    <input type="number" name="minute_debut" id="minute_debut" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="minute_fin">Minute de fin</label>
+                                    <input type="number" name="minute_fin" id="minute_fin" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Paramètres techniques</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="debit_sang_ml_min">Débit sang (ml/min)</label>
+                                    <input type="number" name="debit_sang_ml_min" id="debit_sang_ml_min" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="debit_dialysat_ml_min">Débit dialysat (ml/min)</label>
+                                    <input type="number" name="debit_dialysat_ml_min" id="debit_dialysat_ml_min" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="pression_arterielle">Pression artérielle</label>
+                                    <input type="text" name="pression_arterielle" id="pression_arterielle" class="form-control" placeholder="Ex: 120/80">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="pression_veineuse">Pression veineuse</label>
+                                    <input type="text" name="pression_veineuse" id="pression_veineuse" class="form-control" placeholder="Ex: 140">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="temperature_liquide">Température liquide</label>
+                                    <input type="number" step="0.1" name="temperature_liquide" id="temperature_liquide" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Remarques</h5>
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="remarques">Observations infirmières</label>
+                                    <textarea name="remarques" id="remarques" class="form-control" rows="4" placeholder="Ajouter une remarque clinique ou technique..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'liste_parametrages_seance' seance.id %}" class="btn btn-outline-secondary">Retour</a>
+                            <button type="submit" class="btn btn-register">Enregistrer le paramétrage</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

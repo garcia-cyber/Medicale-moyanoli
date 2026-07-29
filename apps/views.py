@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import SetPasswordForm ,UserChangeForm
 from django.contrib import messages
-from django.db.models import Q , Sum ,Prefetch , Count , ExpressionWrapper , OuterRef, Subquery , F , Value ,DecimalField, FloatField ,IntegerField ,Exists
+from django.db.models import Q , Sum ,Prefetch , Count , ExpressionWrapper ,  Max,OuterRef, Subquery , F , Value ,DecimalField, FloatField ,IntegerField ,Exists
 from decimal import Decimal , ROUND_HALF_UP , InvalidOperation
 import pytz
 from datetime import timedelta , date  , datetime
@@ -18,6 +18,8 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.urls import reverse
+
 
 
 # Create your views here.
@@ -69,7 +71,7 @@ def login(request):
 # ==========================================================================
 def deco(request):
     logout(request)
-    return redirect('home')
+    return redirect('login')
 
 # 4
 # ==========================================================================
@@ -97,7 +99,7 @@ def dashboard(request):
         'recettes_jour': Paiement.objects.filter(date_paiement__date=aujourdhui).aggregate(
             usd=Sum('montant_verse', filter=Q(devise='USD')),
             cdf=Sum('montant_verse', filter=Q(devise='CDF'))
-        ),
+        ), 
         'depenses_jour': Depense.objects.filter(date_depense__date=aujourdhui).aggregate(
             usd=Sum('montant', filter=Q(devise='USD')),
             cdf=Sum('montant', filter=Q(devise='CDF'))
@@ -300,14 +302,21 @@ def gestion_prestations(request):
     query = request.GET.get('q')
     if query:
         prestations_list = Prestation.objects.filter(
-            Q(libelle__icontains=query) | Q(categorie__icontains=query)
+            Q(libelle__icontains=query) |
+            Q(code__icontains=query) |
+            Q(categorie__icontains=query)
         ).order_by('libelle')
     else:
         prestations_list = Prestation.objects.all().order_by('libelle')
 
     # 2. Récupération du taux de change
     config = ConfigurationHopital.objects.first()
-    taux = config.taux_usd_en_cdf if config else 2500.00
+    # Si config.taux_usd_en_cdf est un DecimalField, c'est déjà un Decimal
+    # Sinon, on le convertit proprement
+    if config and config.taux_usd_en_cdf is not None:
+        taux = Decimal(str(config.taux_usd_en_cdf))
+    else:
+        taux = Decimal('2500.00')
 
     # 3. Pagination (10 éléments par page)
     paginator = Paginator(prestations_list, 10)
@@ -316,6 +325,7 @@ def gestion_prestations(request):
 
     # 4. Calcul du prix en CDF pour les éléments de la page actuelle
     for item in prestations_obj:
+        # item.prix est un Decimal, taux aussi maintenant
         item.prix_cdf = item.prix * taux
 
     # 5. Gestion de l'ajout (POST)
@@ -332,20 +342,17 @@ def gestion_prestations(request):
     role = Fonction.objects.filter(userKey=request.user).first()
     fonctionKey = role.fonctionKey.roleName if role and role.fonctionKey else None
 
-    # 7. Préparation des catégories pour le modal de modification
-    # On récupère les tuples (code, nom) définis dans les CHOICES du modèle
+    # 7. Catégories pour les selects
     categories_list = Prestation._meta.get_field('categorie').choices
 
     context = {
-        'prestations': prestations_obj, # On passe l'objet paginé
+        'prestations': prestations_obj,
         'form': form,
         'taux': taux,
         'fonctionKey': fonctionKey,
-        'categories_list': categories_list, # Indispensable pour la boucle dans le modal
+        'categories_list': categories_list,
     }
-    return render(request, 'back-end/prestation/list_prestation.html', context)
-
-# 13
+    return render(request, 'back-end/prestation/list_prestation.html', context)# 13
 # ==================================================================================================
 #  VUE CONFIGURATION TAUX (Modification unique) ---
 # ==================================================================================================
@@ -5799,3 +5806,806 @@ def toutes_les_archives(request):
         'fonctionKey': fonction_key
     })
 
+#
+# ========================================================================================================
+# LISTE DES DIALYSES ET ENREGISTREMENTS DE LA DIALYSE 
+# ========================================================================================================
+@login_required
+def prescriptions_dialyse_list(request):
+    q = request.GET.get("q", "").strip()
+    patient_search = request.GET.get("patient_search", "").strip()
+
+    prescriptions = (
+        PrescriptionDialyse.objects
+        .select_related("patient", "prestation")
+        .order_by("-date_debut")
+    )
+
+    if q:
+        prescriptions = prescriptions.filter(
+            Q(nom_patient_externe__icontains=q) |
+            Q(patient__noms__icontains=q) |
+            Q(prestation__libelle__icontains=q) |
+            Q(telephone_patient_externe__icontains=q)
+        )
+
+    patients_all = Patient.objects.all().order_by("noms")
+    patients_filtered = patients_all
+    if patient_search:
+        patients_filtered = patients_all.filter(noms__icontains=patient_search)
+
+    paginator = Paginator(prescriptions, 10)
+    page_number = request.GET.get("page")
+    prescriptions_page = paginator.get_page(page_number)
+
+    if request.method == "POST":
+        form = PrescriptionDialyseForm(
+            request.POST,
+            patient_queryset=patients_all
+        )
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.statut = "EN_ATTENTE_PAIEMENT"
+            obj.save()
+            messages.success(request, "Prescription de dialyse enregistrée avec succès.")
+            return redirect(f"{reverse('prescriptions_dialyse')}?q={q}&patient_search={patient_search}")
+        else:
+            messages.error(request, "Veuillez corriger les erreurs du formulaire.")
+    else:
+        form = PrescriptionDialyseForm(
+            patient_queryset=patients_filtered
+        )
+        if patient_search:
+            form.fields["patient_search"].initial = patient_search
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    context = {
+        "form": form,
+        "prescriptions": prescriptions_page,
+        "fonctionKey": fonction_key,
+        "q": q,
+        "patient_search": patient_search,
+    }
+    return render(request, "back-end/dialyse/prescriptions_list.html", context)
+#
+# ============================================================================================================
+#  MODIFICATION DE LA PRESCRIPTION DE LA DIALYSE
+# ============================================================================================================
+@login_required
+def modifier_prescription_dialyse(request, pk):
+    prescription = get_object_or_404(PrescriptionDialyse, pk=pk)
+
+    role_obj = Fonction.objects.filter(userKey=request.user).select_related("fonctionKey").first()
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    if request.method == "POST":
+        form = PrescriptionDialyseForm(request.POST, instance=prescription)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    obj = form.save(commit=False)
+                    obj.full_clean()  # valide les contraintes du modèle (patient vs externe)
+                    obj.save()
+                messages.success(request, "Prescription de dialyse modifiée avec succès.")
+                return redirect("prescriptions_dialyse")
+            except ValidationError as e:
+                # e peut être un dict ou une liste d'erreurs
+                if isinstance(e, dict):
+                    for field, errors in e.items():
+                        if field == "__all__":
+                            for err in errors:
+                                form.add_error(None, err)
+                        else:
+                            form.add_error(field, errors)
+                else:
+                    form.add_error(None, e)
+                messages.error(request, "Veuillez corriger les erreurs du formulaire.")
+        else:
+            messages.error(request, "Veuillez corriger les erreurs du formulaire.")
+    else:
+        form = PrescriptionDialyseForm(instance=prescription)
+
+    context = {
+        "form": form,
+        "prescription": prescription,
+        "fonctionKey": fonction_key,
+    }
+    return render(request, "back-end/dialyse/prescription_edit.html", context)
+#
+# =================================================================================================================
+# PAIEMENT DE LA DIALYSE
+# ==================================================================================================================
+@login_required
+def payer_prescription_dialyse(request, pk):
+    prescription = get_object_or_404(PrescriptionDialyse, pk=pk)
+    role_obj = Fonction.objects.filter(userKey=request.user).first()
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+    taux = Decimal(str(ConfigurationHopital.get_taux()))
+
+    if prescription.statut == "PAYEE":
+        messages.info(request, "Cette prescription est déjà soldée.")
+        return redirect("prescriptions_dialyse")
+
+    def get_totaux(prescription_obj):
+        paiements = Paiement.objects.filter(prescription_dialyse=prescription_obj)
+        total_verse = paiements.aggregate(total=Sum("montant_verse"))["total"] or Decimal("0.00")
+        total_reduction = paiements.aggregate(total=Sum("montant_reduction"))["total"] or Decimal("0.00")
+        return total_verse, total_reduction
+
+    montant_total_prescription = Decimal(str(getattr(prescription.prestation, "prix", Decimal("0.00"))))
+    total_verse_usd, total_reduction_usd = get_totaux(prescription)
+    reste_initial = (montant_total_prescription - total_verse_usd - total_reduction_usd).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    if request.method == "POST":
+        form = PaiementDialyseForm(request.POST)
+
+        if form.is_valid():
+            montant_verse = form.cleaned_data["montant_verse"] or Decimal("0.00")
+            montant_reduction = form.cleaned_data["montant_reduction"] or Decimal("0.00")
+            devise = form.cleaned_data["devise"]
+
+            if devise == "CDF":
+                montant_verse_usd = (montant_verse / taux).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                reduction_usd = (montant_reduction / taux).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            else:
+                montant_verse_usd = montant_verse.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                reduction_usd = montant_reduction.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+            if montant_verse_usd <= 0:
+                form.add_error("montant_verse", "Le montant versé doit être supérieur à zéro.")
+            elif montant_reduction < 0:
+                form.add_error("montant_reduction", "La réduction ne peut pas être négative.")
+            elif montant_verse_usd > reste_initial:
+                form.add_error("montant_verse", f"Le montant versé dépasse le solde restant : {reste_initial} USD.")
+            elif reduction_usd > (reste_initial - montant_verse_usd):
+                form.add_error("montant_reduction", "La réduction dépasse le montant encore disponible.")
+            else:
+                with transaction.atomic():
+                    prescription_locked = PrescriptionDialyse.objects.select_for_update().select_related("prestation").get(pk=pk)
+
+                    if prescription_locked.statut == "PAYEE":
+                        messages.info(request, "Cette prescription est déjà soldée.")
+                        return redirect("prescriptions_dialyse")
+
+                    montant_total_locked = Decimal(str(getattr(prescription_locked.prestation, "prix", Decimal("0.00"))))
+                    total_verse_locked, total_reduction_locked = get_totaux(prescription_locked)
+                    reste_actuel = (montant_total_locked - total_verse_locked - total_reduction_locked).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+                    if montant_verse_usd > reste_actuel:
+                        form.add_error("montant_verse", f"Le montant versé dépasse le solde restant : {reste_actuel} USD.")
+                    elif reduction_usd > (reste_actuel - montant_verse_usd):
+                        form.add_error("montant_reduction", "La réduction dépasse le montant encore disponible.")
+                    else:
+                        paiement = form.save(commit=False)
+                        paiement.service = "DIALYSE"
+                        paiement.prescription_dialyse = prescription_locked
+                        paiement.caissier = request.user
+                        paiement.montant_verse = montant_verse.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                        paiement.montant_reduction = montant_reduction.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                        paiement.devise = devise
+                        paiement.reste_a_payer = max(Decimal("0.00"), reste_actuel - montant_verse_usd - reduction_usd)
+                        paiement.save()
+
+                        if paiement.reste_a_payer <= 0:
+                            prescription_locked.statut = "PAYEE"
+                            prescription_locked.save(update_fields=["statut"])
+
+                        messages.success(request, "Paiement enregistré avec succès.")
+                        return redirect("prescriptions_dialyse")
+        else:
+            messages.error(request, "Veuillez corriger les erreurs du formulaire.")
+    else:
+        form = PaiementDialyseForm(initial={"devise": "USD", "montant_reduction": Decimal("0.00")})
+
+    return render(request, "back-end/dialyse/paiement_dialyse.html", {
+        "form": form,
+        "prescription": prescription,
+        "fonctionKey": fonction_key,
+        "taux": taux,
+        "montant_total_prescription": montant_total_prescription,
+        "total_verse_usd": total_verse_usd,
+        "total_reduction_usd": total_reduction_usd,
+        "reste_initial": reste_initial,
+    })
+
+#
+# ==================================================================================================================
+# DETAILS DE LA DIALYSE
+# ===================================================================================================================
+@login_required
+def prescription_dialyse_detail(request, pk):
+    prescription = get_object_or_404(
+        PrescriptionDialyse.objects.select_related("patient", "prestation"),
+        pk=pk
+    )
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    paiements_qs = prescription.paiements.filter(service="DIALYSE")
+    total_paye = paiements_qs.aggregate(total=Sum("montant_verse"))["total"] or 0
+    total_reduction = paiements_qs.aggregate(total=Sum("montant_reduction"))["total"] or 0
+
+    montant_total = prescription.montant_total or 0
+    total_net = total_paye + total_reduction
+    reste_a_payer = max(montant_total - total_net, 0)
+
+    can_create_seance = total_net > 0
+
+    context = {
+        "prescription": prescription,
+        "fonctionKey": fonction_key,
+        "total_paye": total_paye,
+        "total_reduction": total_reduction,
+        "reste_a_payer": reste_a_payer,
+        "can_create_seance": can_create_seance,
+    }
+    return render(request, "back-end/dialyse/prescription_detail.html", context)
+#
+# =====================================================================================================================
+#  CREATION DE LA PREMIERE SEANCE DIALYSE PAR LE TECHNICIEN BIOMEDICAL
+# =====================================================================================================================
+@login_required
+def seance_dialyse_create(request, pk):
+    prescription = get_object_or_404(
+        PrescriptionDialyse.objects.select_related("patient", "prestation"),
+        pk=pk
+    )
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    if request.method == "POST":
+        form = SeanceDialyseForm(request.POST)
+        if form.is_valid():
+            seance = form.save(commit=False)
+            seance.prescription = prescription
+
+            dernier_numero = (
+                SeanceDialyse.objects.filter(prescription=prescription)
+                .aggregate(max_num=Max("numero_seance"))["max_num"] or 0
+            )
+            seance.numero_seance = dernier_numero + 1
+
+            seance.save()
+            messages.success(request, "Séance de dialyse créée avec succès.")
+            return redirect("liste_seances_dialyse")
+    else:
+        form = SeanceDialyseForm(initial={
+            "statut": "PLANIFIEE",
+            "duree_prevue_minutes": getattr(prescription, "duree_seance_minutes", None),
+            "poids_cible_fin_seance_kg": getattr(prescription, "objectif_poids_sec_kg", None),
+        })
+
+    return render(
+        request,
+        "back-end/dialyse/seance_create.html",
+        {
+            "form": form,
+            "prescription": prescription,
+            "fonctionKey": fonction_key,
+        }
+    )
+#
+# ========================================================================================================
+# MODIFICATION DE LA SEANCE 
+# ========================================================================================================
+@login_required
+def seance_dialyse_update(request, pk, seance_id):
+    prescription = get_object_or_404(
+        PrescriptionDialyse.objects.select_related("patient", "prestation"),
+        pk=pk
+    )
+
+    seance = get_object_or_404(
+        SeanceDialyse.objects.select_related("prescription"),
+        pk=seance_id,
+        prescription=prescription
+    )
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    if request.method == "POST":
+        form = SeanceDialyseForm(request.POST, instance=seance)
+        if form.is_valid():
+            seance = form.save(commit=False)
+            seance.prescription = prescription
+            seance.numero_seance = seance.numero_seance or 1
+            seance.save()
+            messages.success(request, "Séance de dialyse modifiée avec succès.")
+            return redirect("liste_seances_dialyse")
+    else:
+        form = SeanceDialyseForm(instance=seance)
+
+    return render(
+        request,
+        "back-end/dialyse/seance_update.html",
+        {
+            "form": form,
+            "prescription": prescription,
+            "seance": seance,
+            "fonctionKey": fonction_key,
+        }
+    )
+#
+# ==============================================================================================================
+# LISTE DES SEANCES DIALYSES
+# ==============================================================================================================
+@login_required
+def liste_seances_dialyse(request):
+    q = request.GET.get("q", "").strip()
+
+    queryset = (
+        SeanceDialyse.objects
+        .select_related("prescription", "prescription__patient", "prescription__prestation")
+        .order_by("-date_heure_debut")
+    )
+
+    if q:
+        queryset = queryset.filter(
+            Q(prescription__patient__noms__icontains=q) |
+            Q(prescription__nom_patient_externe__icontains=q) |
+            Q(prescription__prestation__libelle__icontains=q) |
+            Q(numero_seance__icontains=q) |
+            Q(machine__icontains=q) |
+            Q(filtre__icontains=q) |
+            Q(anticoagulant__icontains=q)
+        )
+
+    paginator = Paginator(queryset, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(request, "back-end/dialyse/seance_list.html", {
+        "page_obj": page_obj,
+        "q": q,
+        "fonctionKey": fonction_key,
+    })
+
+#
+# ========================================================================================================================
+# PARAMETRAGE DES SEANCE DIALYSE PAR L'INFIRMIER 
+# ========================================================================================================================
+@login_required
+def ajouter_parametrage_seance(request, seance_id):
+    seance = get_object_or_404(SeanceDialyse, pk=seance_id)
+
+    if request.method == "POST":
+        minute_debut = request.POST.get("minute_debut")
+        minute_fin = request.POST.get("minute_fin")
+        debit_sang_ml_min = request.POST.get("debit_sang_ml_min")
+        debit_dialysat_ml_min = request.POST.get("debit_dialysat_ml_min")
+        pression_arterielle = request.POST.get("pression_arterielle")
+        pression_veineuse = request.POST.get("pression_veineuse")
+        temperature_liquide = request.POST.get("temperature_liquide")
+        remarques = request.POST.get("remarques")
+
+        if not minute_debut or not minute_fin:
+            messages.error(request, "Les minutes de début et de fin sont obligatoires.")
+            return redirect("ajouter_parametrage_seance", seance_id=seance.id)
+
+        ParametrageSeance.objects.create(
+            seance=seance,
+            minute_debut=int(minute_debut),
+            minute_fin=int(minute_fin),
+            debit_sang_ml_min=int(debit_sang_ml_min) if debit_sang_ml_min else None,
+            debit_dialysat_ml_min=int(debit_dialysat_ml_min) if debit_dialysat_ml_min else None,
+            pression_arterielle=pression_arterielle or None,
+            pression_veineuse=pression_veineuse or None,
+            temperature_liquide=temperature_liquide if temperature_liquide else None,
+            remarques=remarques or "",
+        )
+
+        if seance.statut == "PLANIFIEE":
+            seance.statut = "EN_COURS"
+            seance.save()
+
+        messages.success(request, "Paramétrage enregistré avec succès.")
+        return redirect("liste_parametrages_seance", seance_id=seance.id)
+    
+    role_obj = (
+            Fonction.objects
+            .filter(userKey=request.user)
+            .select_related("fonctionKey")
+            .first()
+        )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+    return render(request, "back-end/dialyse/parametrage_form.html", {"seance": seance, 'fonctionKey':fonction_key}) 
+#
+# =================================================================================================================================
+# LISTE DE PARAMETRAGE
+# =================================================================================================================================
+@login_required
+def liste_parametrages_seance(request, seance_id):
+    seance = get_object_or_404(
+        SeanceDialyse.objects.prefetch_related("parametrages"),
+        pk=seance_id
+    )
+    role_obj = (
+                Fonction.objects
+                .filter(userKey=request.user)
+                .select_related("fonctionKey")
+                .first()
+            )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+    return render(request, "back-end/dialyse/parametrage_list.html", {"seance": seance, 'fonctionKey':fonction_key})
+
+
+#
+# ===============================================================================================================================
+# AJOUTER CONSOMMATION SEANCE PAR LE TECHNICIEN
+# =================================================================================================================================
+@login_required
+def ajouter_consommation_seance(request, seance_id):
+    seance = get_object_or_404(SeanceDialyse, pk=seance_id)
+
+    if request.method == "POST":
+        form = ConsommationSeanceForm(request.POST)
+        if form.is_valid():
+            consommation = form.save(commit=False)
+            consommation.seance = seance
+            consommation.save()
+            messages.success(request, "Consommation enregistrée avec succès.")
+            return redirect("liste_consommations_seance", seance_id=seance.id)
+    else:
+        form = ConsommationSeanceForm()
+    role_obj = (
+                    Fonction.objects
+                    .filter(userKey=request.user)
+                    .select_related("fonctionKey")
+                    .first()
+                )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+    return render(
+        request,
+        "back-end/dialyse/consommation_form.html",
+        {
+            "form": form,
+            "seance": seance,
+            'fonctionKey': fonction_key
+        }
+    )
+
+#
+# =========================================================================================================================
+# LISTE DES CONSOMMATION
+# =========================================================================================================================
+@login_required
+def liste_consommations_seance(request, seance_id):
+    seance = get_object_or_404(SeanceDialyse, pk=seance_id)
+    consommations = seance.consommations.select_related("consommable", "prestation").all()
+    role_obj = (
+                        Fonction.objects
+                        .filter(userKey=request.user)
+                        .select_related("fonctionKey")
+                        .first()
+                    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+    return render(
+        request,
+        "back-end/dialyse/consommation_list.html",
+        {
+            "seance": seance,
+            "consommations": consommations,
+            'fonctionKey' : fonction_key
+        }
+    )
+
+
+#
+# =======================================================================================================
+#  AJOUTE CONSOMMABLE DIALYSE
+# =======================================================================================================
+@login_required
+def ajouter_consommable_dialyse(request):
+    if request.method == "POST":
+        form = ConsommableDialyseForm(request.POST)
+        if form.is_valid():
+            consommable = form.save(commit=False)
+            consommable.userConsommableDialyse = request.user
+            consommable.save()
+            messages.success(request, "Consommable enregistré avec succès.")
+            return redirect("liste_consommables_dialyse")
+    else:
+        form = ConsommableDialyseForm()
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(
+        request,
+        "back-end/dialyse/consommable_dialyse.html",
+        {"form": form, "fonctionKey": fonction_key},
+    )
+#
+# ============================================================================================================================
+# LISTE DES CONSOMMATIONS DIALYSE
+# ============================================================================================================================
+@login_required
+def liste_consommables_dialyse(request):
+    consommables = ConsommableDialyse.objects.all()
+    role_obj = (
+                                Fonction.objects
+                                .filter(userKey=request.user)
+                                .select_related("fonctionKey")
+                                .first()
+                            )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+    return render(
+        request,
+        "back-end/dialyse/consommable_dialyse_list.html",
+        {"consommables": consommables , 
+         'fonctionKey': fonction_key}, 
+    )
+
+#
+# =================================================================================================================================
+# MODIFICATION DE CONCOMMATIONS DIALYSE
+# =================================================================================================================================
+@login_required
+def modifier_consommable_dialyse(request, consommable_id):
+    consommable = get_object_or_404(ConsommableDialyse, pk=consommable_id)
+
+    if request.method == "POST":
+        form = ConsommableDialyseForm(request.POST, instance=consommable)
+        if form.is_valid():
+            consommable_modifie = form.save(commit=False)
+            consommable_modifie.userConsommableDialyse = request.user
+            consommable_modifie.save()
+            messages.success(request, "Consommable modifié avec succès.")
+            return redirect("liste_consommables_dialyse")
+    else:
+        form = ConsommableDialyseForm(instance=consommable)
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(
+        request,
+        "back-end/dialyse/consommable_modifier_dialyse.html",
+        {
+            "form": form,
+            "fonctionKey": fonction_key,
+            "consommable": consommable,
+        },
+    )
+
+
+#
+# =======================================================================================================================
+# ENREGISTREMENT DES INCIDENT PAR L'INFIRMIER
+# =======================================================================================================================
+@login_required
+def ajouter_incident_dialyse(request, seance_id):
+    seance = get_object_or_404(SeanceDialyse, pk=seance_id)
+
+    if request.method == "POST":
+        form = IncidentDialyseForm(request.POST)
+        if form.is_valid():
+            incident = form.save(commit=False)
+            incident.seance = seance
+            incident.userIncidentDialyse = request.user
+            incident.soignant = request.user.get_full_name() or request.user.username
+            incident.save()
+            messages.success(request, "Incident enregistré avec succès.")
+            return redirect("liste_incidents_dialyse")
+    else:
+        form = IncidentDialyseForm()
+
+    role_obj = (
+        Fonction.objects.filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(
+        request,
+        "back-end/dialyse/incident_form.html",
+        {"form": form, "seance": seance, "fonctionKey": fonction_key},
+    )
+
+# 
+# =============================================================================================================================
+# LISTE INCIDENTS 
+# =============================================================================================================================
+@login_required
+def liste_incidents_dialyse(request):
+    incidents = (
+        IncidentDialyse.objects
+        .select_related("seance")
+        .order_by("-date_heure")
+    )
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(
+        request,
+        "back-end/dialyse/incident_list.html",
+        {
+            "incidents": incidents,
+            "fonctionKey": fonction_key,
+        },
+    )
+
+# 
+# ===========================================================================================================================
+# MODIFICATION DES INCIDENT
+# ===========================================================================================================================
+@login_required
+def modifier_incident_dialyse(request, incident_id):
+    incident = get_object_or_404(IncidentDialyse, pk=incident_id)
+
+    if request.method == "POST":
+        form = IncidentDialyseForm(request.POST, instance=incident)
+        if form.is_valid():
+            incident_modifie = form.save(commit=False)
+            incident_modifie.soignant = request.user.get_full_name() or request.user.username
+            incident_modifie.save()
+            messages.success(request, "Incident modifié avec succès.")
+            return redirect("liste_incidents_dialyse")
+    else:
+        form = IncidentDialyseForm(instance=incident)
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(
+        request,
+        "back-end/dialyse/incident_modifier.html",
+        {
+            "form": form,
+            "incident": incident,
+            "fonctionKey": fonction_key,
+        },
+    )
+
+#
+# =================================================================================================================================
+# SUPRIMER INCIDENT 
+# =================================================================================================================================
+@login_required
+def supprimer_incident_dialyse(request, incident_id):
+    incident = get_object_or_404(IncidentDialyse, pk=incident_id)
+
+    if request.method == "POST":
+        incident.delete()
+        messages.success(request, "Incident supprimé avec succès.")
+        return redirect("liste_incidents_dialyse")
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    return render(
+        request,
+        "back-end/dialyse/incident_supprimer.html",
+        {
+            "incident": incident,
+            "fonctionKey": fonction_key,
+        },
+    )
+
+
+#
+# ==============================================================================================================================
+#  MEDECIN DIALYSE ALL
+# ==============================================================================================================================
+@login_required
+def prescription_dialyse_medecin_detail(request, pk):
+    prescription = get_object_or_404(
+        PrescriptionDialyse.objects.select_related("patient", "prestation"),
+        pk=pk
+    )
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        remarque_medecin = request.POST.get("remarque_medecin", "").strip()
+
+        if remarque_medecin:
+            old_remarques = prescription.remarques or ""
+            prescription.remarques = f"{old_remarques}\n\n[Remarque médecin] {remarque_medecin}".strip()
+
+        if action == "valider":
+            prescription.statut = "VALIDEE"
+            messages.success(request, "Prescription validée avec succès.")
+        elif action == "rejeter":
+            prescription.statut = "REJETEE"
+            messages.warning(request, "Prescription rejetée.")
+        else:
+            messages.error(request, "Action non reconnue.")
+            return redirect("prescription_dialyse_medecin_detail", pk=pk)
+
+        prescription.save()
+        return redirect("prescription_dialyse_medecin_detail", pk=pk)
+
+    seances = (
+        prescription.seances
+        .all()
+        .prefetch_related("incidents", "parametrages", "consommations__consommable")
+        .order_by("-date_heure_debut")
+    )
+
+    incidents = IncidentDialyse.objects.filter(seance__prescription=prescription).select_related("seance")
+    consommations = ConsommationSeance.objects.filter(seance__prescription=prescription).select_related("seance", "consommable", "prestation")
+
+    role_obj = (
+        Fonction.objects
+        .filter(userKey=request.user)
+        .select_related("fonctionKey")
+        .first()
+    )
+    fonction_key = role_obj.fonctionKey.roleName if role_obj and role_obj.fonctionKey else "Utilisateur"
+
+    context = {
+        "fonctionKey": fonction_key,
+        "prescription": prescription,
+        "seances": seances,
+        "incidents": incidents,
+        "consommations": consommations,
+        "nb_seances": seances.count(),
+        "nb_seances_terminees": seances.filter(statut="TERMINEE").count(),
+        "nb_seances_annulees": seances.filter(statut="ANNULEE").count(),
+        "nb_incidents": incidents.count(),
+        "nb_incidents_graves": incidents.filter(gravite="GRAVE").count(),
+        "poids_perdu_total": seances.aggregate(total=Sum("poids_perdu_kg"))["total"] or 0,
+        "titre_page": "Suivi médical de la prescription",
+    }
+
+    return render(request, "back-end/dialyse/prescription_medecin_detail.html", context)

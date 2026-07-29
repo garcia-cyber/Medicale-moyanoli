@@ -1,327 +1,616 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="fr">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
-        <title>Prestations - Moyanoli Médicale</title>
-        
-        {% include 'back-end/includes/css.html' %}
-        
-        <style>
-            /* Améliorations Design Global */
-            .card-table { border-radius: 15px; border: none; box-shadow: 0 4px 24px rgba(0,0,0,0.06); overflow: hidden; }
-            .table thead th { background-color: #f8f9fa; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 2px solid #edf2f9; color: #495057; padding: 14px; }
-            .table tbody td { vertical-align: middle; padding: 14px; }
-            
-            /* Badges de tarification */
-            .badge-usd { background-color: #e3f2fd; color: #0d6efd; border: 1px solid #b3d7ff; padding: 6px 12px; font-weight: 600; border-radius: 6px; }
-            .text-cdf { color: #198754; font-weight: bold; font-size: 1.05em; }
-            .taux-info { background: #fff8e1; border: 1px solid #ffe082; color: #b78103; padding: 10px 18px; border-radius: 50px; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
-            
-            /* Badges Catégories de Prestations Dynamiques */
-            .cat-badge { font-size: 0.82em; padding: 5px 10px; border-radius: 30px; font-weight: 500; display: inline-block; }
-            .cat-labo { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-            .cat-consult { background-color: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
-            .cat-imagerie { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
-            .cat-default { background-color: #f8f9fa; color: #6c757d; border: 1px solid #e9ecef; }
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Prestations - Moyanoli Médicale</title>
 
-            /* Boutons et Recherches */
-            .add-btn { background-color: #007bff; color: white; border-radius: 50px; padding: 10px 24px; font-weight: 500; transition: all 0.2s; }
-            .add-btn:hover { background-color: #0056b3; color: white; transform: translateY(-1px); }
-            .search-box { border-radius: 30px 0 0 30px; border-right: none; padding-left: 20px; height: 46px; }
-            .search-btn { border-radius: 0 30px 30px 0; width: 50px; height: 46px; }
-            .btn-reset { border-radius: 30px; height: 46px; display: inline-flex; align-items: center; }
-            
-            .text-valeur-normale { font-family: 'Courier New', Courier, monospace; color: #495057; font-weight: 600; background: #f1f3f5; padding: 3px 8px; border-radius: 4px; font-size: 0.9em; }
-            .bloc-labo-uniquement { display: none; } 
-        </style>
-    </head>
-    <body>
-        <div class="main-wrapper">
-        
-            {% include 'back-end/includes/header.html' %}
-            {% include 'back-end/includes/sidebar.html' %}
-            
-            <div class="page-wrapper">
-                <div class="content container-fluid">
-                    
-                    <!-- Header de la page -->
-                    <div class="page-header mb-4">
-                        <div class="row align-items-center">
-                            <div class="col">
-                                <h3 class="page-title" style="font-weight: 700; color: #1f2937;">Catalogue des Prestations</h3>
-                                <ul class="breadcrumb" style="background: transparent; padding: 0;">
-                                    <li class="breadcrumb-item"><a href="#">Configuration</a></li>
-                                    <li class="breadcrumb-item active">Prestations</li>
-                                </ul>
-                            </div>
-                            <div class="col-auto float-right ml-auto">
-                                <a href="#" class="btn add-btn" data-toggle="modal" data-target="#add_prestation">
-                                    <i class="fa fa-plus-circle"></i> Nouvelle prestation
-                                </a>
-                            </div>
-                        </div>
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --primary: #1f6feb;
+            --primary-soft: #eaf2ff;
+            --success: #1f8f5f;
+            --success-soft: #e9f8f1;
+            --info-soft: #eef7ff;
+            --warning-soft: #fff8e6;
+            --border: #e5eaf2;
+            --text-main: #223047;
+            --text-muted: #6b7280;
+            --bg-page: #f6f8fb;
+            --card: #ffffff;
+        }
+
+        body {
+            background: var(--bg-page);
+            color: var(--text-main);
+        }
+
+        .page-header {
+            background: transparent;
+            padding: 0;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: .35rem;
+        }
+
+        .card-clean {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(17, 24, 39, 0.05);
+            overflow: hidden;
+        }
+
+        .toolbar-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .table thead th {
+            background: #f9fbfe;
+            color: #4b5563;
+            font-size: .76rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            border-bottom: 1px solid var(--border);
+            padding: 14px 16px;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            vertical-align: middle;
+            padding: 14px 16px;
+            border-color: #f0f3f8;
+        }
+
+        .badge-usd {
+            display: inline-block;
+            background: var(--primary-soft);
+            color: var(--primary);
+            border: 1px solid #cfe0ff;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: .88rem;
+        }
+
+        .text-cdf {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .taux-info {
+            background: var(--warning-soft);
+            border: 1px solid #f1e0a5;
+            color: #8b6b11;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: .92rem;
+        }
+
+        .cat-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: .8rem;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+
+        .cat-labo {
+            background: var(--success-soft);
+            color: var(--success);
+            border-color: #c9eddc;
+        }
+
+        .cat-consult {
+            background: #f4ecff;
+            color: #7a3db8;
+            border-color: #e4d4ff;
+        }
+
+        .cat-imagerie {
+            background: #fff4e8;
+            color: #c55d00;
+            border-color: #ffdcb8;
+        }
+
+        .cat-dialyse {
+            background: #e9fbfd;
+            color: #0d6b75;
+            border-color: #c8f0f4;
+        }
+
+        .cat-default {
+            background: #f3f5f8;
+            color: #5f6b7a;
+            border-color: #e5eaf2;
+        }
+
+        .search-box {
+            height: 46px;
+            border-radius: 12px 0 0 12px;
+            border-right: 0;
+            padding-left: 16px;
+        }
+
+        .search-btn {
+            height: 46px;
+            width: 50px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .btn-reset {
+            height: 46px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-add {
+            background: var(--primary);
+            border: none;
+            color: white;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-weight: 600;
+            box-shadow: 0 6px 16px rgba(31, 111, 235, .18);
+        }
+
+        .btn-add:hover {
+            background: #1657c4;
+            color: white;
+        }
+
+        .text-valeur-normale {
+            display: inline-block;
+            background: #f4f7fb;
+            border: 1px solid #e4eaf3;
+            color: #495057;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: .88rem;
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-size: .93rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: "";
+            width: 4px;
+            height: 18px;
+            border-radius: 8px;
+            background: var(--primary);
+            display: inline-block;
+        }
+
+        .modal-content.medical-modal {
+            border: 0;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, .18);
+        }
+
+        .medical-modal .modal-header {
+            background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 18px 22px;
+        }
+
+        .medical-modal .modal-body {
+            padding: 22px;
+            background: #fff;
+        }
+
+        .medical-modal .modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .label-medical {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 7px;
+            font-size: .9rem;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #dce3ee;
+            min-height: 44px;
+        }
+
+        .form-control:focus {
+            border-color: #9dc2ff;
+            box-shadow: 0 0 0 .2rem rgba(31,111,235,.08);
+        }
+
+        .help-strip {
+            background: #f8fbff;
+            border: 1px solid #e2ecff;
+            color: #49607d;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: .88rem;
+        }
+
+        .section-box {
+            border: 1px solid #e8edf4;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            background: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .submit-section .btn {
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header mb-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">Catalogue des Prestations</h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="#">Configuration</a></li>
+                            <li class="breadcrumb-item active">Prestations</li>
+                        </ul>
                     </div>
-
-                    <!-- Barre de recherche et Taux -->
-                    <div class="row mb-4 align-items-center">
-                        <div class="col-md-7">
-                            <form method="GET" action="{% url 'gestion_prestations' %}" class="input-group">
-                                <input type="text" name="q" class="form-control search-box" placeholder="Rechercher une prestation, un code ou une catégorie..." value="{{ request.GET.q|default:'' }}">
-                                <div class="input-group-append">
-                                    <button class="btn btn-primary search-btn" type="submit">
-                                        <i class="fa fa-search"></i>
-                                    </button>
-                                </div>
-                                {% if request.GET.q %}
-                                    <a href="{% url 'gestion_prestations' %}" class="btn btn-light ml-2 btn-reset">
-                                        <i class="fa fa-times mr-1"></i> Réinitialiser
-                                    </a>
-                                {% endif %}
-                            </form>
-                        </div>
-                        <div class="col-md-5 text-md-right mt-3 mt-md-0">
-                            <div class="d-inline-block taux-info">
-                                <i class="fa fa-exchange mr-1"></i> 
-                                <strong>Taux du jour : 1 USD = {{ taux|floatformat:0 }} CDF</strong>
-                            </div>
-                        </div>
+                    <div class="col-auto ml-auto">
+                        <a href="#" class="btn btn-add" data-toggle="modal" data-target="#add_prestation">
+                            <i class="fa fa-plus-circle mr-1"></i> Nouvelle prestation
+                        </a>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Alertes Django -->
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="border-radius: 10px;">
-                                <strong>{% if message.tags == 'success' %}Succès !{% else %}Information{% endif %}</strong> {{ message }}
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
+            <div class="toolbar-card mb-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-7 mb-3 mb-lg-0">
+                        <form method="GET" action="{% url 'gestion_prestations' %}" class="input-group">
+                            <input type="text" name="q" class="form-control search-box" placeholder="Rechercher une prestation, un code ou une catégorie..." value="{{ request.GET.q|default:'' }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary search-btn" type="submit">
+                                    <i class="fa fa-search"></i>
                                 </button>
                             </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <!-- Tableau des Prestations -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card card-table">
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 80px;">Code</th>
-                                                    <th>Désignation</th>
-                                                    <th>Catégorie</th>
-                                                    <th>Valeur Normale (Labo)</th>
-                                                    <th>Prix (USD)</th>
-                                                    <th>Prix (CDF)</th>
-                                                    <th class="text-right" style="width: 100px;">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for item in prestations %}
-                                                <tr>
-                                                    <td><span class="text-muted">#{{ item.id }}</span></td>
-                                                    <td><span style="font-weight: 600; color: #2d3748;">{{ item.libelle }}</span></td>
-                                                    <td>
-                                                        {% if item.categorie == 'LABO' %}
-                                                            <span class="cat-badge cat-labo">{{ item.get_categorie_display }}</span>
-                                                        {% elif item.categorie == 'CONS' or item.categorie == 'CONSULTATION' %}
-                                                            <span class="cat-badge cat-consult">{{ item.get_categorie_display }}</span>
-                                                        {% elif item.categorie == 'IMAG' or item.categorie == 'IMAGERIE' %}
-                                                            <span class="cat-badge cat-imagerie">{{ item.get_categorie_display }}</span>
-                                                        {% else %}
-                                                            <span class="cat-badge cat-default">{{ item.get_categorie_display }}</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <!-- AJOUT DE LA COLONNE VALEUR NORMALE -->
-                                                    <td>
-                                                        {% if item.valeur_normale %}
-                                                            <span class="text-valeur-normale">{{ item.valeur_normale }}</span>
-                                                        {% else %}
-                                                            <span class="text-muted">—</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td><span class="badge-usd">{{ item.prix }} $</span></td>
-                                                    <td>
-                                                        <span class="text-cdf">{{ item.prix_cdf|floatformat:0 }} FC</span>
-                                                    </td>
-                                                    <td class="text-right">
-                                                        <div class="dropdown dropdown-action">
-                                                            <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false" style="color: #6c757d;"><i class="fa fa-ellipsis-v"></i></a>
-                                                            <div class="dropdown-menu dropdown-menu-right">
-                                                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#edit_prestation_{{ item.id }}">
-                                                                    <i class="fa fa-pencil m-r-5 text-warning"></i> Modifier
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-
-                                                <!-- MODAL DE MODIFICATION -->
-                                                <div id="edit_prestation_{{ item.id }}" class="modal custom-modal fade edit-prestation-modal" role="dialog">
-                                                    <div class="modal-dialog modal-dialog-centered" role="document">
-                                                        <div class="modal-content" style="border-radius: 15px;">
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title" style="font-weight: 600;">Modifier : {{ item.libelle }}</h5>
-                                                                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <form action="{% url 'modifier_prestation' item.id %}" method="POST">
-                                                                    {% csrf_token %}
-                                                                    <div class="form-group">
-                                                                        <label>Désignation</label>
-                                                                        <input type="text" name="libelle" class="form-control" value="{{ item.libelle }}" required>
-                                                                    </div>
-                                                                    <div class="form-group">
-                                                                        <label>Catégorie</label>
-                                                                        <select name="categorie" class="form-control select-categorie-edit" required>
-                                                                            {% for val, name in categories_list %}
-                                                                                <option value="{{ val }}" {% if item.categorie == val %}selected{% endif %}>{{ name }}</option>
-                                                                            {% endfor %}
-                                                                        </select>
-                                                                    </div>
-                                                                    
-                                                                    <div class="form-group bloc-valeur-normale-edit">
-                                                                        <label>Valeur Normale / Référence (Labo)</label>
-                                                                        <input type="text" name="valeur_normale" class="form-control" value="{{ item.valeur_normale|default:'' }}" placeholder="Ex: 70-110 mg/dl ou Négatif">
-                                                                    </div>
-
-                                                                    <div class="form-group">
-                                                                        <label>Prix en USD</label>
-                                                                        <input type="number" step="0.01" name="prix" class="form-control" value="{{ item.prix|stringformat:'.2f' }}" required>
-                                                                    </div>
-                                                                    <div class="submit-section text-center mt-4">
-                                                                        <button type="submit" class="btn btn-primary submit-btn" style="border-radius: 30px; padding: 10px 30px;">Enregistrer les modifications</button>
-                                                                    </div>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {% empty %}
-                                                <tr>
-                                                    <td colspan="7" class="text-center p-5">
-                                                        <i class="fa fa-folder-open-o fa-3x mb-3 text-muted"></i>
-                                                        <p class="text-muted">Aucune prestation trouvée dans le catalogue.</p>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <!-- PAGINATION -->
-                                    {% if prestations.has_other_pages %}
-                                    <div class="mt-4 p-3">
-                                        <ul class="pagination justify-content-center mb-0">
-                                            {% if prestations.has_previous %}
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page={{ prestations.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" style="border-radius: 20px 0 0 20px;">Précédent</a>
-                                                </li>
-                                            {% endif %}
-
-                                            {% for i in prestations.paginator.page_range %}
-                                                <li class="page-item {% if prestations.number == i %}active{% endif %}">
-                                                    <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ i }}</a>
-                                                </li>
-                                            {% endfor %}
-
-                                            {% if prestations.has_next %}
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page={{ prestations.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" style="border-radius: 0 20px 20px 0;">Suivant</a>
-                                                </li>
-                                            {% endif %}
-                                        </ul>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                            {% if request.GET.q %}
+                                <a href="{% url 'gestion_prestations' %}" class="btn btn-light ml-2 btn-reset">
+                                    <i class="fa fa-times mr-1"></i> Réinitialiser
+                                </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                    <div class="col-lg-5 text-lg-right">
+                        <div class="d-inline-block taux-info">
+                            <i class="fa fa-exchange mr-1"></i>
+                            <strong>Taux du jour : 1 USD = {{ taux|floatformat:0 }} CDF</strong>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- MODAL D'AJOUT -->
-            <div id="add_prestation" class="modal custom-modal fade" role="dialog">
-                <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content" style="border-radius: 15px;">
-                        <div class="modal-header">
-                            <h5 class="modal-title" style="font-weight: 600;">Nouvelle Prestation</h5>
-                            <button type="button" class="close" data-dismiss="modal">&times;</button>
-                        </div>
-                        <div class="modal-body">
-                            <form method="POST">
-                                {% csrf_token %}
-                                {% for field in form %}
-                                    <div class="form-group {% if field.name == 'valeur_normale' %}bloc-valeur-normale-add{% endif %}">
-                                        <label style="font-weight: 500;">{{ field.label }}</label>
-                                        {{ field }}
-                                        {% if field.errors %}
-                                            <small class="text-danger">{{ field.errors.0 }}</small>
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="border-radius: 12px;">
+                        <strong>{% if message.tags == 'success' %}Succès !{% else %}Information{% endif %}</strong> {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card card-clean">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 110px;">Code</th>
+                                    <th>Désignation</th>
+                                    <th>Catégorie</th>
+                                    <th>Référence</th>
+                                    <th>Durée</th>
+                                    <th>Prix USD</th>
+                                    <th>Prix CDF</th>
+                                    <th class="text-right" style="width: 110px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in prestations %}
+                                <tr>
+                                    <td>
+                                        {% if item.code %}
+                                            <span class="text-muted font-weight-600">{{ item.code }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
                                         {% endif %}
-                                    </div>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 700; color: #243244;">{{ item.libelle }}</div>
+                                    </td>
+                                    <td>
+                                        {% if item.categorie == 'LABO' %}
+                                            <span class="cat-badge cat-labo">{{ item.get_categorie_display }}</span>
+                                        {% elif item.categorie == 'CONS' %}
+                                            <span class="cat-badge cat-consult">{{ item.get_categorie_display }}</span>
+                                        {% elif item.categorie == 'DIALYSE' %}
+                                            <span class="cat-badge cat-dialyse">{{ item.get_categorie_display }}</span>
+                                        {% elif item.categorie == 'RADIO' or item.categorie == 'SCAN' or item.categorie == 'IRM' or item.categorie == 'ECHO' %}
+                                            <span class="cat-badge cat-imagerie">{{ item.get_categorie_display }}</span>
+                                        {% else %}
+                                            <span class="cat-badge cat-default">{{ item.get_categorie_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.categorie == 'LABO' and item.valeur_normale %}
+                                            <span class="text-valeur-normale">{{ item.valeur_normale }}</span>
+                                        {% elif item.categorie == 'DIALYSE' %}
+                                            <span class="text-muted">
+                                                {% if item.debit_sang_reference_ml_min or item.debit_dialysat_reference_ml_min %}
+                                                    Sang: {{ item.debit_sang_reference_ml_min|default:"—" }} / Dialysat: {{ item.debit_dialysat_reference_ml_min|default:"—" }}
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.categorie == 'DIALYSE' and item.duree_typique_minutes %}
+                                            <span class="badge badge-info" style="border-radius: 999px; padding: 6px 10px;">{{ item.duree_typique_minutes }} min</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="badge-usd">{{ item.prix }} $</span></td>
+                                    <td><span class="text-cdf">{{ item.prix_cdf|floatformat:0 }} FC</span></td>
+                                    <td class="text-right">
+                                        <div class="dropdown dropdown-action">
+                                            <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false" style="color:#6c757d;">
+                                                <i class="fa fa-ellipsis-v"></i>
+                                            </a>
+                                            <div class="dropdown-menu dropdown-menu-right">
+                                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#edit_prestation_{{ item.id }}">
+                                                    <i class="fa fa-pencil m-r-5 text-warning"></i> Modifier
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center p-5">
+                                        <i class="fa fa-folder-open-o fa-3x mb-3 text-muted"></i>
+                                        <p class="text-muted mb-0">Aucune prestation trouvée dans le catalogue.</p>
+                                    </td>
+                                </tr>
                                 {% endfor %}
-                                <div class="submit-section text-center mt-4">
-                                    <button class="btn btn-primary submit-btn" style="border-radius: 30px; padding: 10px 30px;">Ajouter au catalogue</button>
-                                </div>
-                            </form>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
+
+                    {% if prestations.has_other_pages %}
+                    <div class="p-3">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if prestations.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ prestations.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Précédent</a>
+                                </li>
+                            {% endif %}
+                            {% for i in prestations.paginator.page_range %}
+                                <li class="page-item {% if prestations.number == i %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ i }}</a>
+                                </li>
+                            {% endfor %}
+                            {% if prestations.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ prestations.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Suivant</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-
         </div>
 
-        {% include 'back-end/includes/js.html' %}
-        
-        <script>
-            $(document).ready(function(){
-                $('.modal-body input, .modal-body select').addClass('form-control');
+        <!-- MODAL D'AJOUT -->
+        <div id="add_prestation" class="modal custom-modal fade" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content medical-modal">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fa fa-stethoscope mr-2" style="color: var(--primary);"></i>
+                            Nouvelle prestation
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="section-box">
+                                <div class="section-title">Informations générales</div>
+                                <div class="form-row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="label-medical">Libellé</label>
+                                            {{ form.libelle }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="label-medical">Code</label>
+                                            {{ form.code }}
+                                        </div>
+                                    </div>
+                                </div>
 
-                /* =======================================================
-                   LOGIQUE 1 : GESTION DANS LE MODAL D'AJOUT (FORM DJANGO)
-                   ======================================================= */
-                const $selectAdd = $('#add_prestation select[name="categorie"]');
-                const $blocAdd = $('.bloc-valeur-normale-add');
+                                <div class="form-row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="label-medical">Catégorie</label>
+                                            {{ form.categorie }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group pt-4">
+                                            <div class="custom-control custom-switch">
+                                                {{ form.actif }}
+                                                <label class="custom-control-label" for="{{ form.actif.id_for_label }}">Actif</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                function gererAffichageAdd() {
-                    if ($selectAdd.val() === 'LABO') {
-                        $blocAdd.slideDown(200);
-                    } else {
-                        $blocAdd.slideUp(200);
-                        $blocAdd.find('input').val(''); 
-                    }
-                }
+                            <div class="section-box bloc-valeur-normale-add">
+                                <div class="section-title">Paramètres laboratoire</div>
+                                <div class="help-strip mb-3">À renseigner uniquement pour les prestations de laboratoire.</div>
+                                <div class="form-group mb-0">
+                                    <label class="label-medical">Valeur normale / référence</label>
+                                    {{ form.valeur_normale }}
+                                </div>
+                            </div>
 
-                $selectAdd.on('change', gererAffichageAdd);
-                gererAffichageAdd(); 
+                            <div class="section-box bloc-dialyse-add">
+                                <div class="section-title">Paramètres dialyse</div>
+                                <div class="help-strip mb-3">Renseigne les paramètres standards de la séance de dialyse.</div>
+                                <div class="form-row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="label-medical">Durée (min)</label>
+                                            {{ form.duree_typique_minutes }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="label-medical">Débit sang (ml/min)</label>
+                                            {{ form.debit_sang_reference_ml_min }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="label-medical">Débit dialysat (ml/min)</label>
+                                            {{ form.debit_dialysat_reference_ml_min }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                /* =======================================================
-                   LOGIQUE 2 : GESTION DANS LES MODALS DE MODIFICATION
-                   ======================================================= */
-                $('.edit-prestation-modal').each(function() {
-                    const $modal = $(this);
-                    const $selectEdit = $modal.find('.select-categorie-edit');
-                    const $blocEdit = $modal.find('.bloc-valeur-normale-edit');
+                            <div class="section-box">
+                                <div class="section-title">Tarification</div>
+                                <div class="form-row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-0">
+                                            <label class="label-medical">Prix en USD</label>
+                                            {{ form.prix }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    function gererAffichageEdit() {
-                        if ($selectEdit.val() === 'LABO') {
-                            $blocEdit.show();
-                        } else {
-                            $blocEdit.hide();
-                            $blocEdit.find('input').val(''); 
-                        }
-                    }
+                            <div class="submit-section text-center mt-4">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fa fa-check mr-2"></i> Ajouter au catalogue
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                    $selectEdit.on('change', gererAffichageEdit);
-                    
-                    $modal.on('show.bs.modal', function() {
-                        gererAffichageEdit();
-                    });
-                });
-            });
-        </script>
-    </body>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+
+<script>
+$(document).ready(function(){
+    const $selectAdd = $('#add_prestation select[name="categorie"]');
+    const $blocValeurAdd = $('.bloc-valeur-normale-add');
+    const $blocDialyseAdd = $('.bloc-dialyse-add');
+
+    function gererAffichageAdd() {
+        const cat = $selectAdd.val();
+        if (cat === 'LABO') {
+            $blocValeurAdd.show();
+            $blocDialyseAdd.hide();
+        } else if (cat === 'DIALYSE') {
+            $blocValeurAdd.hide();
+            $blocDialyseAdd.show();
+        } else {
+            $blocValeurAdd.hide();
+            $blocDialyseAdd.hide();
+        }
+    }
+
+    $selectAdd.on('change', gererAffichageAdd);
+    gererAffichageAdd();
+
+    $('.edit-prestation-modal').each(function() {
+        const $modal = $(this);
+        const $selectEdit = $modal.find('.select-categorie-edit');
+        const $blocValeurEdit = $modal.find('.bloc-valeur-normale-edit');
+        const $blocDialyseEdit = $modal.find('.bloc-dialyse-edit');
+
+        function gererAffichageEdit() {
+            const cat = $selectEdit.val();
+            if (cat === 'LABO') {
+                $blocValeurEdit.show();
+                $blocDialyseEdit.hide();
+            } else if (cat === 'DIALYSE') {
+                $blocValeurEdit.hide();
+                $blocDialyseEdit.show();
+            } else {
+                $blocValeurEdit.hide();
+                $blocDialyseEdit.hide();
+            }
+        }
+
+        $selectEdit.on('change', gererAffichageEdit);
+        $modal.on('show.bs.modal', gererAffichageEdit);
+        gererAffichageEdit();
+    });
+});
+</script>
+</body>
 </html>

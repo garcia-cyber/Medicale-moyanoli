@@ -520,3 +520,186 @@ class PatientArchiveAdmin(admin.ModelAdmin):
     
     # Barre de recherche (recherche sur le nom du patient lié)
     search_fields = ('patient__noms',)
+
+
+@admin.register(PrescriptionDialyse)
+class PrescriptionDialyseAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "patient_display",
+        "prestation_libelle",
+        "date_debut",
+        "statut",
+        "montant_total",
+        "active",
+    )
+    list_filter = (
+        "prestation__categorie",
+        "statut",
+        "active",
+    )
+    search_fields = (
+        "patient__noms",
+        "patient__postnoms",
+        "patient__prenoms",
+        "nom_patient_externe",
+        "telephone_patient_externe",
+        "prestation__libelle",
+    )
+
+    fieldsets = (
+        ("Patient", {
+            "fields": (
+                "patient",
+                "nom_patient_externe",
+                "sexe_patient_externe",
+                "age_patient_externe",
+                "telephone_patient_externe",
+            ),
+            "description": (
+                "Remplir soit « Patient (système) » soit « Nom du patient externe », "
+                "mais pas les deux."
+            ),
+        }),
+        ("Prescription de dialyse", {
+            "fields": (
+                "prestation",
+                "date_debut",
+                "date_fin",
+                "frequence_par_semaine",
+                "duree_seance_minutes",
+                "objectif_poids_sec_kg",
+                "remarques",
+            ),
+        }),
+        ("Statut et options", {
+            "fields": (
+                "statut",
+                "active",
+            ),
+        }),
+        ("Informations financières", {
+            "fields": (
+                "montant_total",
+            ),
+            "classes": ("collapse",),
+        }),
+    )
+
+    readonly_fields = (
+        "patient_display",
+        "montant_total",
+    )
+
+    @admin.display(description="Patient")
+    def patient_display(self, obj):
+        if obj.patient:
+            return str(obj.patient)
+        return f"{obj.nom_patient_externe} (externe)"
+
+    @admin.display(description="Prestation")
+    def prestation_libelle(self, obj):
+        return obj.prestation.libelle if obj.prestation else "-"
+
+
+
+@admin.register(SeanceDialyse)
+class SeanceDialyseAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "prescription",
+        "numero_seance",
+        "date_heure_debut",
+        "date_heure_fin",
+        "statut",
+        "poids_avant_kg",
+        "poids_apres_kg",
+        "poids_perdu_kg",
+        "duree_reelle_minutes",
+        "facturee",
+    )
+
+    list_filter = (
+        "statut",
+        "facturee",
+        "date_heure_debut",
+        "date_heure_fin",
+    )
+
+    search_fields = (
+        "prescription__id",
+        "prescription__patient__nom",
+        "prescription__patient__prenom",
+        "machine",
+        "filtre",
+        "anticoagulant",
+        "tension_avant",
+        "tension_apres",
+    )
+
+    readonly_fields = (
+        "poids_perdu_kg",
+        "duree_reelle_minutes",
+    )
+
+    ordering = ("-date_heure_debut",)
+    list_per_page = 20
+
+    fieldsets = (
+        ("Informations générales", {
+            "fields": (
+                "prescription",
+                "numero_seance",
+                "statut",
+                "facturee",
+            )
+        }),
+        ("Horaires", {
+            "fields": (
+                "date_heure_debut",
+                "date_heure_fin",
+                "duree_reelle_minutes",
+            )
+        }),
+        ("Constantes de la séance", {
+            "fields": (
+                "duree_prevue_minutes",
+                "poids_cible_fin_seance_kg",
+            )
+        }),
+        ("Données cliniques avant", {
+            "fields": (
+                "poids_avant_kg",
+                "temperature_avant",
+                "pouls_avant",
+                "tension_avant",
+            )
+        }),
+        ("Paramètres machine", {
+            "fields": (
+                "machine",
+                "filtre",
+                "debit_sang_ml_min",
+                "debit_dialysat_ml_min",
+                "anticoagulant",
+            )
+        }),
+        ("Données cliniques après", {
+            "fields": (
+                "poids_apres_kg",
+                "temperature_apres",
+                "pouls_apres",
+                "tension_apres",
+                "poids_perdu_kg",
+            )
+        }),
+        ("Biologie", {
+            "fields": (
+                "uree_avant",
+                "uree_apres",
+                "creatinine_avant",
+                "creatinine_apres",
+            ),
+            "classes": ("collapse",),
+        }),
+    )

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Modifier Séance Dialyse - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg: #eef5fb;
+            --surface: #ffffff;
+            --surface-2: #f8fbff;
+            --line: #d7e2ee;
+            --line-soft: #edf3f8;
+            --primary: #1f7ae0;
+            --primary-2: #1459a8;
+            --primary-soft: #eaf4ff;
+            --text: #17324f;
+            --muted: #6b7b8e;
+            --success-bg: #eaf8ef;
+            --success-text: #157347;
+            --warning-bg: #fff6e8;
+            --warning-text: #9a5b00;
+            --danger-bg: #fdecec;
+            --danger-text: #b42318;
+            --info-bg: #eef6ff;
+            --info-text: #0f4c81;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #edf5fb 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: transparent;
+        }
+
+        .page-title {
+            font-size: 1.55rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-soft), #dbeeff);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cfe1f5;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .08);
+            font-size: 22px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(16, 24, 40, .05);
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 22px;
+        }
+
+        .card-title {
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .muted { color: var(--muted); }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 18px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .15);
+        }
+
+        .btn-register:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #1769c4, #124e94);
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--muted);
+        }
+
+        .section-box {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        label {
+            font-weight: 700;
+            color: #21415f;
+            margin-bottom: 8px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 12px;
+            border-color: #d8e3ee;
+            padding: 10px 14px;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 .2rem rgba(31, 122, 224, .12);
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #f3f7fb;
+            color: #35506b;
+            border: 1px solid #e1e9f2;
+            font-weight: 700;
+            font-size: .8rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-edit"></i></span>
+                            Modifier la séance de dialyse
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'liste_seances_dialyse' %}">Séances de dialyse</a></li>
+                            <li class="breadcrumb-item active">Modifier</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Séance #{{ seance.numero_seance }}</h4>
+                    <p class="muted mb-0">
+                        {% if prescription.patient %}
+                            Patient : {{ prescription.patient.noms }}
+                        {% else %}
+                            Patient : {{ prescription.nom_patient_externe|default:"Patient externe" }}
+                        {% endif %}
+                    </p>
+                    <div class="mt-2">
+                        <span class="pill">Prescription ID: {{ prescription.id }}</span>
+                        <span class="pill">Séance actuelle: {{ seance.numero_seance }}</span>
+                        <span class="pill">Statut: {{ seance.get_statut_display }}</span>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Informations générales</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.numero_seance.id_for_label }}">Numéro séance</label>
+                                    {{ form.numero_seance }}
+                                    {% if form.numero_seance.errors %}
+                                        <div class="text-danger mt-1">{{ form.numero_seance.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.date_heure_debut.id_for_label }}">Date/heure début</label>
+                                    {{ form.date_heure_debut }}
+                                    {% if form.date_heure_debut.errors %}
+                                        <div class="text-danger mt-1">{{ form.date_heure_debut.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.date_heure_fin.id_for_label }}">Date/heure fin</label>
+                                    {{ form.date_heure_fin }}
+                                    {% if form.date_heure_fin.errors %}
+                                        <div class="text-danger mt-1">{{ form.date_heure_fin.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.statut.id_for_label }}">Statut</label>
+                                    {{ form.statut }}
+                                    {% if form.statut.errors %}
+                                        <div class="text-danger mt-1">{{ form.statut.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.duree_prevue_minutes.id_for_label }}">Durée prévue (min)</label>
+                                    {{ form.duree_prevue_minutes }}
+                                    {% if form.duree_prevue_minutes.errors %}
+                                        <div class="text-danger mt-1">{{ form.duree_prevue_minutes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.poids_cible_fin_seance_kg.id_for_label }}">Poids cible fin séance (kg)</label>
+                                    {{ form.poids_cible_fin_seance_kg }}
+                                    {% if form.poids_cible_fin_seance_kg.errors %}
+                                        <div class="text-danger mt-1">{{ form.poids_cible_fin_seance_kg.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Données cliniques avant séance</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.poids_avant_kg.id_for_label }}">Poids avant (kg)</label>
+                                    {{ form.poids_avant_kg }}
+                                    {% if form.poids_avant_kg.errors %}
+                                        <div class="text-danger mt-1">{{ form.poids_avant_kg.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.temperature_avant.id_for_label }}">Température avant (°C)</label>
+                                    {{ form.temperature_avant }}
+                                    {% if form.temperature_avant.errors %}
+                                        <div class="text-danger mt-1">{{ form.temperature_avant.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.pouls_avant.id_for_label }}">Pouls avant</label>
+                                    {{ form.pouls_avant }}
+                                    {% if form.pouls_avant.errors %}
+                                        <div class="text-danger mt-1">{{ form.pouls_avant.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.tension_avant.id_for_label }}">Tension avant</label>
+                                    {{ form.tension_avant }}
+                                    {% if form.tension_avant.errors %}
+                                        <div class="text-danger mt-1">{{ form.tension_avant.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Paramètres machine</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.machine.id_for_label }}">Machine</label>
+                                    {{ form.machine }}
+                                    {% if form.machine.errors %}
+                                        <div class="text-danger mt-1">{{ form.machine.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.filtre.id_for_label }}">Filtre</label>
+                                    {{ form.filtre }}
+                                    {% if form.filtre.errors %}
+                                        <div class="text-danger mt-1">{{ form.filtre.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.anticoagulant.id_for_label }}">Anticoagulant</label>
+                                    {{ form.anticoagulant }}
+                                    {% if form.anticoagulant.errors %}
+                                        <div class="text-danger mt-1">{{ form.anticoagulant.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.debit_sang_ml_min.id_for_label }}">Débit sang (ml/min)</label>
+                                    {{ form.debit_sang_ml_min }}
+                                    {% if form.debit_sang_ml_min.errors %}
+                                        <div class="text-danger mt-1">{{ form.debit_sang_ml_min.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.debit_dialysat_ml_min.id_for_label }}">Débit dialysat (ml/min)</label>
+                                    {{ form.debit_dialysat_ml_min }}
+                                    {% if form.debit_dialysat_ml_min.errors %}
+                                        <div class="text-danger mt-1">{{ form.debit_dialysat_ml_min.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Données cliniques après séance</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.poids_apres_kg.id_for_label }}">Poids après (kg)</label>
+                                    {{ form.poids_apres_kg }}
+                                    {% if form.poids_apres_kg.errors %}
+                                        <div class="text-danger mt-1">{{ form.poids_apres_kg.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.temperature_apres.id_for_label }}">Température après (°C)</label>
+                                    {{ form.temperature_apres }}
+                                    {% if form.temperature_apres.errors %}
+                                        <div class="text-danger mt-1">{{ form.temperature_apres.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.pouls_apres.id_for_label }}">Pouls après</label>
+                                    {{ form.pouls_apres }}
+                                    {% if form.pouls_apres.errors %}
+                                        <div class="text-danger mt-1">{{ form.pouls_apres.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.tension_apres.id_for_label }}">Tension après</label>
+                                    {{ form.tension_apres }}
+                                    {% if form.tension_apres.errors %}
+                                        <div class="text-danger mt-1">{{ form.tension_apres.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Biologie</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.uree_avant.id_for_label }}">Urée avant</label>
+                                    {{ form.uree_avant }}
+                                    {% if form.uree_avant.errors %}
+                                        <div class="text-danger mt-1">{{ form.uree_avant.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.uree_apres.id_for_label }}">Urée après</label>
+                                    {{ form.uree_apres }}
+                                    {% if form.uree_apres.errors %}
+                                        <div class="text-danger mt-1">{{ form.uree_apres.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.creatinine_avant.id_for_label }}">Créatinine avant</label>
+                                    {{ form.creatinine_avant }}
+                                    {% if form.creatinine_avant.errors %}
+                                        <div class="text-danger mt-1">{{ form.creatinine_avant.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="{{ form.creatinine_apres.id_for_label }}">Créatinine après</label>
+                                    {{ form.creatinine_apres }}
+                                    {% if form.creatinine_apres.errors %}
+                                        <div class="text-danger mt-1">{{ form.creatinine_apres.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box mb-4">
+                            <h5 class="mb-3">Champs calculés / lecture seule</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label>Poids perdu (kg)</label>
+                                    <input type="text" class="form-control" value="{{ seance.poids_perdu_kg|default:'-' }}" readonly>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label>Durée réelle (min)</label>
+                                    <input type="text" class="form-control" value="{{ seance.duree_reelle_minutes|default:'-' }}" readonly>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label>Facturée</label>
+                                    <input type="text" class="form-control" value="{% if seance.facturee %}Oui{% else %}Non{% endif %}" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'liste_seances_dialyse' %}" class="btn btn-outline-secondary">Retour</a>
+                            <button type="submit" class="btn btn-register">Enregistrer les modifications</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

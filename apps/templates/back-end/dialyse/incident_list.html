@@ -1,0 +1,278 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Incidents de dialyse</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg: #eef5fb;
+            --surface: #ffffff;
+            --line: #d7e2ee;
+            --line-soft: #edf3f8;
+            --primary: #1f7ae0;
+            --primary-2: #1459a8;
+            --primary-soft: #eaf4ff;
+            --text: #17324f;
+            --muted: #6b7b8e;
+            --success-bg: #eaf8ef;
+            --success-text: #157347;
+            --danger-bg: #fdecec;
+            --danger-text: #b42318;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #edf5fb 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: transparent;
+        }
+
+        .page-title {
+            font-size: 1.55rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-soft), #dbeeff);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cfe1f5;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .08);
+            font-size: 22px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(16, 24, 40, .05);
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 22px;
+        }
+
+        .card-title {
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 18px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .15);
+        }
+
+        .btn-register:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #1769c4, #124e94);
+        }
+
+        .section-box {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .table thead th {
+            background: #f7fbff;
+            color: #10395e;
+            font-weight: 800;
+            font-size: .82rem;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+            padding: 14px 12px;
+        }
+
+        .table tbody td {
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 12px 12px;
+            border-color: #eef3f8;
+            font-size: .92rem;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #f3f7fb;
+            color: #35506b;
+            border: 1px solid #e1e9f2;
+            font-weight: 700;
+            font-size: .8rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .78rem;
+            font-weight: 800;
+            border: 1px solid transparent;
+        }
+
+        .active {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border-color: #b7ebc6;
+        }
+
+        .danger {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border-color: #f6b1b1;
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header mb-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-exclamation-triangle"></i></span>
+                            Incidents de dialyse
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item active">Incidents</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-box mb-4">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">Gestion des incidents</h5>
+                        <p class="muted mb-1">Liste des incidents enregistrés pendant les séances de dialyse.</p>
+                        <p class="muted mb-0">
+                            Utilisateur connecté :
+                            {% if user.is_authenticated %}
+                                {{ user.get_full_name|default:user.username }}
+                            {% else %}
+                                Non connecté
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <span class="pill">Total : {{ incidents|length }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Liste des incidents</h4>
+                    <p class="muted mb-0">Vous pouvez consulter, modifier ou supprimer un incident.</p>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered align-middle">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date et heure</th>
+                                    <th>Séance</th>
+                                    <th>Type</th>
+                                    <th>Gravité</th>
+                                    <th>Soignant</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for incident in incidents %}
+                                <tr>
+                                    <td><span class="pill">{{ forloop.counter }}</span></td>
+                                    <td>{{ incident.date_heure|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ incident.seance }}</td>
+                                    <td>{{ incident.type_incident }}</td>
+                                    <td>
+                                        {% if incident.gravite == "LEGER" %}
+                                            <span class="status-badge active">Léger</span>
+                                        {% elif incident.gravite == "MODERE" %}
+                                            <span class="status-badge" style="background:#fff6e8;color:#9a5b00;border-color:#ffd89b;">Modéré</span>
+                                        {% else %}
+                                            <span class="status-badge danger">Grave</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ incident.soignant|default:"-" }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a href="{% url 'modifier_incident_dialyse' incident.id %}" class="btn btn-sm btn-outline-primary">
+                                                Modifier
+                                            </a>
+                                            <a href="{% url 'supprimer_incident_dialyse' incident.id %}" class="btn btn-sm btn-outline-danger">
+                                                Supprimer
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        Aucun incident enregistré pour le moment.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

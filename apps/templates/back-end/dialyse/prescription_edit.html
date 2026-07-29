@@ -1,0 +1,307 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Modifier Prescription Dialyse</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --primary: #1f6feb;
+            --primary-soft: #eaf2ff;
+            --success: #1f8f5f;
+            --success-soft: #e9f8f1;
+            --border: #e6ebf2;
+            --text-main: #223047;
+            --text-muted: #6b7280;
+            --bg-page: #f6f8fb;
+            --card: #ffffff;
+        }
+
+        body { background: var(--bg-page); color: var(--text-main); }
+        .page-title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .card-clean {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(17, 24, 39, 0.05);
+            overflow: hidden;
+        }
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #dce3ee;
+            min-height: 44px;
+        }
+        .form-control:focus {
+            border-color: #9dc2ff;
+            box-shadow: 0 0 0 .2rem rgba(31,111,235,.08);
+        }
+        .label-medical {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 7px;
+            font-size: .9rem;
+        }
+        .section-box {
+            border: 1px solid #e8edf4;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            background: #fff;
+        }
+        .section-title {
+            font-size: .93rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: "";
+            width: 4px;
+            height: 18px;
+            border-radius: 8px;
+            background: var(--primary);
+            display: inline-block;
+        }
+        .help-strip {
+            background: #f8fbff;
+            border: 1px solid #e2ecff;
+            color: #49607d;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: .88rem;
+        }
+        .patient-box {
+            background: #f8fbff;
+            border: 1px solid #e2ecff;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+        .patient-box .title {
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+        .submit-section .btn {
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 700;
+        }
+        .text-muted-small {
+            font-size: .86rem;
+            color: var(--text-muted);
+        }
+        .errorlist {
+            margin: 6px 0 0 0;
+            padding-left: 18px;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header mb-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">Modifier la prescription de dialyse</h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'prescriptions_dialyse' %}">Dialyse</a></li>
+                            <li class="breadcrumb-item active">Modifier</li>
+                        </ul>
+                    </div>
+                    <div class="col-auto ml-auto">
+                        <a href="{% url 'prescriptions_dialyse' %}" class="btn btn-light" style="border-radius:12px; min-height:44px; display:inline-flex; align-items:center;">
+                            <i class="fa fa-arrow-left mr-1"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="border-radius: 12px;">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger" style="border-radius: 12px;">
+                    <strong>Veuillez corriger les erreurs du formulaire.</strong>
+                    {% if form.non_field_errors %}
+                        <div class="mt-2">{{ form.non_field_errors }}</div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="card card-clean">
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {% csrf_token %}
+
+                        <div class="section-box">
+                            <div class="section-title">Patient</div>
+
+                            <div class="patient-box">
+                                <div class="title">Choisir un patient</div>
+
+                                <div class="form-group">
+                                    <label class="label-medical">Patient du système</label>
+                                    {{ form.patient }}
+                                    {{ form.patient.errors }}
+                                    <div class="text-muted-small mt-1">Si tu choisis un patient du système, laisse vide le nom externe.</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="label-medical">Nom patient externe</label>
+                                    {{ form.nom_patient_externe }}
+                                    {{ form.nom_patient_externe.errors }}
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="label-medical">Sexe externe</label>
+                                            {{ form.sexe_patient_externe }}
+                                            {{ form.sexe_patient_externe.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="label-medical">Âge externe</label>
+                                            {{ form.age_patient_externe }}
+                                            {{ form.age_patient_externe.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="label-medical">Téléphone externe</label>
+                                            {{ form.telephone_patient_externe }}
+                                            {{ form.telephone_patient_externe.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box">
+                            <div class="section-title">Prescription</div>
+
+                            <div class="form-row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Prestation</label>
+                                        {{ form.prestation }}
+                                        {{ form.prestation.errors }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Type de dialyse</label>
+                                        {{ form.type_dialyse }}
+                                        {{ form.type_dialyse.errors }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Date de début</label>
+                                        {{ form.date_debut }}
+                                        {{ form.date_debut.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Date de fin</label>
+                                        {{ form.date_fin }}
+                                        {{ form.date_fin.errors }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Fréquence / semaine</label>
+                                        {{ form.frequence_par_semaine }}
+                                        {{ form.frequence_par_semaine.errors }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Durée séance (min)</label>
+                                        {{ form.duree_seance_minutes }}
+                                        {{ form.duree_seance_minutes.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Poids sec (kg)</label>
+                                        {{ form.objectif_poids_sec_kg }}
+                                        {{ form.objectif_poids_sec_kg.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-box">
+                            <div class="section-title">Informations complémentaires</div>
+
+                            <div class="form-group">
+                                <label class="label-medical">Remarques</label>
+                                {{ form.remarques }}
+                                {{ form.remarques.errors }}
+                            </div>
+
+                            <div class="form-group mb-0">
+                                <div class="custom-control custom-switch">
+                                    {{ form.active }}
+                                    <label class="custom-control-label" for="{{ form.active.id_for_label }}">Actif</label>
+                                </div>
+                                {{ form.active.errors }}
+                            </div>
+
+                            {% if form.statut %}
+                            <div class="form-group mt-3">
+                                <label class="label-medical">Statut</label>
+                                {{ form.statut }}
+                                {{ form.statut.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="submit-section text-center mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-check mr-2"></i> Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

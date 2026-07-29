@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Paramétrages de séance - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg: #eef5fb;
+            --surface: #ffffff;
+            --surface-2: #f8fbff;
+            --line: #d7e2ee;
+            --line-soft: #edf3f8;
+            --primary: #1f7ae0;
+            --primary-2: #1459a8;
+            --primary-soft: #eaf4ff;
+            --text: #17324f;
+            --muted: #6b7b8e;
+            --success-bg: #eaf8ef;
+            --success-text: #157347;
+            --warning-bg: #fff6e8;
+            --warning-text: #9a5b00;
+            --danger-bg: #fdecec;
+            --danger-text: #b42318;
+            --info-bg: #eef6ff;
+            --info-text: #0f4c81;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #edf5fb 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: transparent;
+        }
+
+        .page-title {
+            font-size: 1.55rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-soft), #dbeeff);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cfe1f5;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .08);
+            font-size: 22px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(16, 24, 40, .05);
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 22px;
+        }
+
+        .card-title {
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .muted { color: var(--muted); }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #f3f7fb;
+            color: #35506b;
+            border: 1px solid #e1e9f2;
+            font-weight: 700;
+            font-size: .8rem;
+        }
+
+        .table-shell {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .table-responsive { border-radius: 16px; }
+
+        .table {
+            margin-bottom: 0;
+            min-width: 1200px;
+        }
+
+        .table thead th {
+            background: #f7fbff;
+            color: #10395e;
+            font-weight: 800;
+            font-size: .82rem;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+            padding: 14px 12px;
+        }
+
+        .table tbody td {
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 12px 12px;
+            border-color: #eef3f8;
+            font-size: .92rem;
+        }
+
+        .table-hover tbody tr:hover { background-color: #f9fcff; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .78rem;
+            font-weight: 800;
+            border: 1px solid transparent;
+        }
+
+        .active {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border-color: #b7ebc6;
+        }
+
+        .warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border-color: #ffd89b;
+        }
+
+        .info-badge {
+            background: var(--info-bg);
+            color: var(--info-text);
+            border: 1px solid #cfe2ff;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 18px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .15);
+        }
+
+        .btn-register:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #1769c4, #124e94);
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-gear"></i></span>
+                            Paramétrages de séance
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'liste_seances_dialyse' %}">Séances de dialyse</a></li>
+                            <li class="breadcrumb-item active">Paramétrages</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div>
+                    <span class="pill">
+                        Séance #{{ seance.numero_seance }}
+                    </span>
+                    <span class="pill">
+                        {% if seance.prescription.patient %}
+                            {{ seance.prescription.patient.noms }}
+                        {% else %}
+                            {{ seance.prescription.nom_patient_externe|default:"Patient externe" }}
+                        {% endif %}
+                    </span>
+                </div>
+
+                <a href="{% url 'ajouter_parametrage_seance' seance.id %}" class="btn btn-register">
+                    Ajouter un paramétrage
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Liste des paramétrages</h4>
+                    <p class="muted mb-0">Historique des réglages saisis par l’infirmier pendant la séance.</p>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-shell">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Minute début</th>
+                                        <th>Minute fin</th>
+                                        <th>Débit sang</th>
+                                        <th>Débit dialysat</th>
+                                        <th>Pression artérielle</th>
+                                        <th>Pression veineuse</th>
+                                        <th>Température liquide</th>
+                                        <th>Remarques</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in seance.parametrages.all %}
+                                    <tr>
+                                        <td><span class="pill">{{ p.minute_debut }}</span></td>
+                                        <td><span class="pill">{{ p.minute_fin }}</span></td>
+                                        <td>{{ p.debit_sang_ml_min|default:"-" }}</td>
+                                        <td>{{ p.debit_dialysat_ml_min|default:"-" }}</td>
+                                        <td>{{ p.pression_arterielle|default:"-" }}</td>
+                                        <td>{{ p.pression_veineuse|default:"-" }}</td>
+                                        <td>{{ p.temperature_liquide|default:"-" }}</td>
+                                        <td>{{ p.remarques|default:"-" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">Aucun paramétrage enregistré.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

@@ -1,0 +1,244 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Modifier consommable - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg: #eef5fb;
+            --surface: #ffffff;
+            --surface-2: #f8fbff;
+            --line: #d7e2ee;
+            --line-soft: #edf3f8;
+            --primary: #1f7ae0;
+            --primary-2: #1459a8;
+            --primary-soft: #eaf4ff;
+            --text: #17324f;
+            --muted: #6b7b8e;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #edf5fb 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: transparent;
+        }
+
+        .page-title {
+            font-size: 1.55rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-soft), #dbeeff);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cfe1f5;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .08);
+            font-size: 22px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(16, 24, 40, .05);
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 22px;
+        }
+
+        .card-title {
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 18px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .15);
+        }
+
+        .btn-register:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #1769c4, #124e94);
+        }
+
+        .section-box {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .form-label {
+            font-weight: 700;
+            color: #284766;
+        }
+
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #d7e2ee;
+            padding: 11px 14px;
+            box-shadow: none;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(31, 122, 224, .12);
+        }
+
+        .errorlist {
+            color: #b42318;
+            margin-top: .35rem;
+            margin-bottom: 0;
+            padding-left: 1rem;
+            font-size: .9rem;
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header mb-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-edit"></i></span>
+                            Modifier un consommable
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'liste_consommables_dialyse' %}">Consommables</a></li>
+                            <li class="breadcrumb-item active">Modifier</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-box mb-4">
+                <h5 class="mb-2">Consommable à modifier</h5>
+                <p class="muted mb-0">
+                    {% if consommable %}
+                        {{ consommable.nom }} {% if consommable.categorie %}({{ consommable.categorie }}){% endif %}
+                    {% else %}
+                        Consommable sélectionné
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Formulaire de modification</h4>
+                    <p class="muted mb-0">Mettez à jour les informations du consommable puis enregistrez.</p>
+                </div>
+
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="{{ form.nom.id_for_label }}">{{ form.nom.label }}</label>
+                                {{ form.nom }}
+                                {{ form.nom.errors }}
+                                {% if form.nom.help_text %}
+                                    <div class="text-muted mt-1">{{ form.nom.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="{{ form.reference.id_for_label }}">{{ form.reference.label }}</label>
+                                {{ form.reference }}
+                                {{ form.reference.errors }}
+                                {% if form.reference.help_text %}
+                                    <div class="text-muted mt-1">{{ form.reference.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="{{ form.categorie.id_for_label }}">{{ form.categorie.label }}</label>
+                                {{ form.categorie }}
+                                {{ form.categorie.errors }}
+                                {% if form.categorie.help_text %}
+                                    <div class="text-muted mt-1">{{ form.categorie.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3 d-flex align-items-end">
+                                <div class="form-check mt-2">
+                                    {{ form.actif }}
+                                    <label class="form-check-label ms-2" for="{{ form.actif.id_for_label }}">
+                                        {{ form.actif.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="{% url 'liste_consommables_dialyse' %}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-register">
+                                Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

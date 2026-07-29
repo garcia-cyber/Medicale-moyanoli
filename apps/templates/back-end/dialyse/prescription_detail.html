@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Détail Prescription Dialyse - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg-page: #f4f8fc;
+            --surface: #ffffff;
+            --line: #dbe5ef;
+            --line-soft: #edf2f7;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-soft: #eff6ff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --success-bg: #ecfdf5;
+            --success-text: #166534;
+            --warning-bg: #fff7ed;
+            --warning-text: #9a3412;
+            --danger-bg: #fef2f2;
+            --danger-text: #991b1b;
+        }
+
+        body {
+            background: var(--bg-page);
+            color: var(--text);
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        .page-wrapper,
+        .content {
+            background: var(--bg-page);
+        }
+
+        .content {
+            padding-top: 24px;
+            padding-bottom: 24px;
+        }
+
+        .page-header {
+            margin-bottom: 18px;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dbeafe;
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.08);
+            font-size: 22px;
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 20px;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+        }
+
+        .btn-register:hover {
+            background: linear-gradient(135deg, var(--primary-dark), #1e40af);
+        }
+
+        .card,
+        .panel-box {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .card-header {
+            background: #fff;
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 20px;
+            border-radius: 18px 18px 0 0;
+        }
+
+        .card-title {
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: .9rem;
+            margin: 0;
+        }
+
+        .section-box {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 18px;
+            background: #fff;
+        }
+
+        .section-title {
+            background: #f9fbff;
+            border-bottom: 1px solid var(--line-soft);
+            padding: 13px 16px;
+            font-weight: 800;
+            color: #123c74;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .section-body {
+            padding: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--muted);
+            font-weight: 600;
+            min-width: 180px;
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: var(--text);
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .status-badge.active {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-badge.inactive {
+            background: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+
+        .status-badge.warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid #fed7aa;
+        }
+
+        .status-badge.danger {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid #fecaca;
+        }
+
+        .finance-box {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .finance-card {
+            background: #f9fbff;
+            border: 1px solid var(--line-soft);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .finance-card .label {
+            color: var(--muted);
+            font-size: .85rem;
+            margin-bottom: 4px;
+        }
+
+        .finance-card .value {
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        @media (max-width: 768px) {
+            .finance-box {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-file-text"></i></span>
+                            Détail de la prescription
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'prescriptions_dialyse' %}">Liste des prescriptions</a></li>
+                            <li class="breadcrumb-item active">Détail</li>
+                        </ul>
+                    </div>
+                    <div class="col-auto d-flex gap-2">
+                        {% if can_create_seance %}
+                            <a href="{% url 'seance_dialyse_create' prescription.pk %}" class="btn btn-primary btn-register">
+                                <i class="la la-play-circle"></i> Créer séance dialyse
+                            </a>
+                        {% else %}
+                            <button type="button" class="btn btn-secondary btn-register" disabled>
+                                <i class="la la-lock"></i> Payer d’abord
+                            </button>
+                        {% endif %}
+                        <a href="{% url 'modifier_prescription_dialyse' prescription.pk %}" class="btn btn-outline-warning btn-register">
+                            <i class="la la-edit"></i> Modifier
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Informations de la prescription</h4>
+                    <p class="subtitle">Consultation complète des données liées à la prescription de dialyse.</p>
+                </div>
+
+                <div class="card-body">
+                    <div class="section-box">
+                        <div class="section-title"><i class="la la-user"></i> Patient</div>
+                        <div class="section-body">
+                            <div class="info-item">
+                                <div class="info-label">Type de patient</div>
+                                <div class="info-value">
+                                    {% if prescription.patient %}
+                                        <span class="status-badge active">Patient système</span>
+                                    {% else %}
+                                        <span class="status-badge warning">Patient externe</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Nom</div>
+                                <div class="info-value">
+                                    {% if prescription.patient %}
+                                        {{ prescription.patient.noms }}
+                                    {% else %}
+                                        {{ prescription.nom_patient_externe|default:"-" }}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Téléphone</div>
+                                <div class="info-value">
+                                    {% if prescription.patient %}
+                                        -
+                                    {% else %}
+                                        {{ prescription.telephone_patient_externe|default:"-" }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-box">
+                        <div class="section-title"><i class="la la-stethoscope"></i> Prescription médicale</div>
+                        <div class="section-body">
+                            <div class="info-item">
+                                <div class="info-label">Prestation</div>
+                                <div class="info-value">{{ prescription.prestation.libelle }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Date début</div>
+                                <div class="info-value">{{ prescription.date_debut|date:"d/m/Y" }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Date fin</div>
+                                <div class="info-value">{{ prescription.date_fin|default:"-"|date:"d/m/Y" }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Fréquence par semaine</div>
+                                <div class="info-value">{{ prescription.frequence_par_semaine }} / sem</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Durée séance</div>
+                                <div class="info-value">{{ prescription.duree_seance_minutes }} min</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Objectif poids sec</div>
+                                <div class="info-value">{{ prescription.objectif_poids_sec_kg|default:"-" }} kg</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-box">
+                        <div class="section-title"><i class="la la-money"></i> Paiement</div>
+                        <div class="section-body">
+                            <div class="finance-box mb-3">
+                                <div class="finance-card">
+                                    <div class="label">Montant total</div>
+                                    <div class="value">{{ prescription.montant_total }} USD</div>
+                                </div>
+                                <div class="finance-card">
+                                    <div class="label">Total payé</div>
+                                    <div class="value">{{ total_paye }} USD</div>
+                                </div>
+                                <div class="finance-card">
+                                    <div class="label">Reste à payer</div>
+                                    <div class="value">{{ reste_a_payer }} USD</div>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Paiement</div>
+                                <div class="info-value">
+                                    {% if can_create_seance %}
+                                        <span class="status-badge active">Au moins un paiement enregistré</span>
+                                    {% else %}
+                                        <span class="status-badge danger">Aucun paiement enregistré</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-box">
+                        <div class="section-title"><i class="la la-clipboard"></i> Statut</div>
+                        <div class="section-body">
+                            <div class="info-item">
+                                <div class="info-label">Statut prescription</div>
+                                <div class="info-value">{{ prescription.get_statut_display }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Active</div>
+                                <div class="info-value">
+                                    {% if prescription.active %}
+                                        <span class="status-badge active">Oui</span>
+                                    {% else %}
+                                        <span class="status-badge inactive">Non</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-box">
+                        <div class="section-title"><i class="la la-sticky-note"></i> Remarques</div>
+                        <div class="section-body">
+                            {{ prescription.remarques|default:"Aucune remarque." }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

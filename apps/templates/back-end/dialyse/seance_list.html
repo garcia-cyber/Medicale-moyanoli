@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Liste Séances Dialyse - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg: #eef5fb;
+            --surface: #ffffff;
+            --surface-2: #f8fbff;
+            --line: #d7e2ee;
+            --line-soft: #edf3f8;
+            --primary: #1f7ae0;
+            --primary-2: #1459a8;
+            --primary-soft: #eaf4ff;
+            --text: #17324f;
+            --muted: #6b7b8e;
+            --success-bg: #eaf8ef;
+            --success-text: #157347;
+            --warning-bg: #fff6e8;
+            --warning-text: #9a5b00;
+            --danger-bg: #fdecec;
+            --danger-text: #b42318;
+            --info-bg: #eef6ff;
+            --info-text: #0f4c81;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #edf5fb 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: transparent;
+        }
+
+        .page-header {
+            margin-bottom: 18px;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text);
+        }
+
+        .medical-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-soft), #dbeeff);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cfe1f5;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .08);
+            font-size: 22px;
+        }
+
+        .breadcrumb {
+            background: transparent;
+            padding: 0;
+            margin-bottom: 0;
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--muted);
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 280px;
+            max-width: 520px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 20px rgba(16, 24, 40, .04);
+        }
+
+        .search-box i {
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            width: 100%;
+            background: transparent;
+            color: var(--text);
+        }
+
+        .search-box input::placeholder {
+            color: #8aa0b7;
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .14);
+        }
+
+        .btn-register:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #1769c4, #124e94);
+        }
+
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .summary-card {
+            background: linear-gradient(180deg, #ffffff 0%, #fafdff 100%);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 16px 18px;
+            box-shadow: 0 8px 20px rgba(16, 24, 40, .04);
+        }
+
+        .summary-label {
+            color: var(--muted);
+            font-size: .8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+
+        .summary-value {
+            font-size: 1.3rem;
+            font-weight: 900;
+            margin-top: 6px;
+            color: var(--text);
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(16, 24, 40, .05);
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 22px;
+        }
+
+        .card-title {
+            font-weight: 900;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .table-container {
+            padding: 18px;
+            background: var(--surface);
+        }
+
+        .table-shell {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .table-responsive {
+            border-radius: 16px;
+            overflow: auto;
+        }
+
+        .custom-table {
+            margin-bottom: 0;
+            min-width: 1850px;
+        }
+
+        .custom-table thead tr {
+            background: #f7fbff;
+        }
+
+        .custom-table thead th {
+            border: none !important;
+            color: #5f7288;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+            padding: 16px 14px !important;
+            white-space: nowrap;
+        }
+
+        .custom-table td {
+            padding: 14px !important;
+            vertical-align: middle !important;
+            border-top: 1px solid #edf3f8;
+            white-space: nowrap;
+            font-size: .92rem;
+        }
+
+        .custom-table tbody tr:hover {
+            background: #f9fcff;
+        }
+
+        .badge-modern {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-pending { color: #9a5b00; background: var(--warning-bg); }
+        .status-running { color: #0f4c81; background: var(--info-bg); }
+        .status-done { color: #157347; background: var(--success-bg); }
+        .status-cancel { color: #b42318; background: var(--danger-bg); }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        #customSearch {
+            border-radius: 25px 0 0 25px;
+            border: 1px solid #d7e2ee;
+            border-right: none;
+            padding: 12px 18px;
+            width: 250px;
+            background: #fff;
+        }
+
+        .search-addon {
+            background: #fff;
+            border-radius: 0 25px 25px 0;
+            border: 1px solid #d7e2ee;
+            border-left: none;
+            padding: 0 18px;
+            color: #1f7ae0;
+        }
+
+        .action-icon {
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #4a5568;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            text-decoration: none;
+        }
+
+        .action-icon:hover {
+            background: #ebf2ff;
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .dropdown-action .dropdown-menu {
+            border: none;
+            box-shadow: 0 8px 22px rgba(16, 24, 40, 0.12);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 240px;
+        }
+
+        .dropdown-action .dropdown-item {
+            font-size: 0.9rem;
+            padding: 10px 16px;
+        }
+
+        .dropdown-action .dropdown-item:hover {
+            background: #f8fafc;
+        }
+
+        .ellipsis-cell {
+            width: 60px;
+            text-align: right;
+        }
+
+        .pagination-wrap {
+            display: flex;
+            justify-content: center;
+            margin-top: 18px;
+        }
+
+        .page-link {
+            border-radius: 10px !important;
+        }
+
+        @media (max-width: 992px) {
+            .summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 576px) {
+            .summary-strip { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-heartbeat"></i></span>
+                            Séances de dialyse
+                        </h3>
+                        <ul class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Accueil</a></li>
+                            <li class="breadcrumb-item active">Liste</li>
+                        </ul>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="search-container">
+                            <form method="get" class="input-group" style="width: auto;">
+                                <input type="text" id="customSearch" name="q" value="{{ q }}" class="form-control" placeholder="Rechercher...">
+                                <div class="input-group-append">
+                                    <button type="submit" class="input-group-text search-addon">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="summary-strip">
+                <div class="summary-card">
+                    <div class="summary-label">Total résultats</div>
+                    <div class="summary-value">{{ page_obj.paginator.count }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Page actuelle</div>
+                    <div class="summary-value">{{ page_obj.number }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Séances sur page</div>
+                    <div class="summary-value">{{ page_obj.object_list|length }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Total pages</div>
+                    <div class="summary-value">{{ page_obj.paginator.num_pages }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Toutes les séances enregistrées</h4>
+                    <p class="muted mb-0">Vue hospitalière détaillée des séances de dialyse avec actions rapides par dossier.</p>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-shell">
+                        <div class="table-responsive">
+                            <table class="table custom-table" id="myTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Patient</th>
+                                        <th>Prescription</th>
+                                        <th>Date début</th>
+                                        <th>Date fin</th>
+                                        <th>Statut</th>
+                                        <th>Durée prévue</th>
+                                        <th>Durée réelle</th>
+                                        <th>Poids avant</th>
+                                        <th>Poids après</th>
+                                        <th>Poids perdu</th>
+                                        <th>Température avant</th>
+                                        <th>Température après</th>
+                                        <th>Pouls avant</th>
+                                        <th>Pouls après</th>
+                                        <th>Tension avant</th>
+                                        <th>Tension après</th>
+                                        <th>Machine</th>
+                                        <th>Filtre</th>
+                                        <th>Débit sang</th>
+                                        <th>Débit dialysat</th>
+                                        <th>Anticoagulant</th>
+                                        <th>Urée avant</th>
+                                        <th>Urée après</th>
+                                        <th>Créatinine avant</th>
+                                        <th>Créatinine après</th>
+                                        <th>Facturée</th>
+                                        <th class="ellipsis-cell">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for seance in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge-modern" style="background:#eef2f7; color:#4a5568; font-family:monospace;">
+                                                #{{ seance.numero_seance }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style="font-weight: 700; color: #2d3748;">
+                                                {% if seance.prescription.patient %}
+                                                    {{ seance.prescription.patient.noms }}
+                                                {% else %}
+                                                    {{ seance.prescription.nom_patient_externe|default:"-" }}
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>{{ seance.prescription.prestation.libelle }}</td>
+                                        <td>{{ seance.date_heure_debut|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            {% if seance.date_heure_fin %}
+                                                {{ seance.date_heure_fin|date:"d/m/Y H:i" }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if seance.statut == "PLANIFIEE" %}
+                                                <span class="badge-modern status-pending">{{ seance.get_statut_display }}</span>
+                                            {% elif seance.statut == "EN_COURS" %}
+                                                <span class="badge-modern status-running">{{ seance.get_statut_display }}</span>
+                                            {% elif seance.statut == "TERMINEE" %}
+                                                <span class="badge-modern status-done">{{ seance.get_statut_display }}</span>
+                                            {% else %}
+                                                <span class="badge-modern status-cancel">{{ seance.get_statut_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ seance.duree_prevue_minutes|default:"-" }} min</td>
+                                        <td>{{ seance.duree_reelle_minutes|default:"-" }} min</td>
+                                        <td>{{ seance.poids_avant_kg|default:"-" }} kg</td>
+                                        <td>{{ seance.poids_apres_kg|default:"-" }} kg</td>
+                                        <td>{{ seance.poids_perdu_kg|default:"-" }} kg</td>
+                                        <td>{{ seance.temperature_avant|default:"-" }} °C</td>
+                                        <td>{{ seance.temperature_apres|default:"-" }} °C</td>
+                                        <td>{{ seance.pouls_avant|default:"-" }}</td>
+                                        <td>{{ seance.pouls_apres|default:"-" }}</td>
+                                        <td>{{ seance.tension_avant|default:"-" }}</td>
+                                        <td>{{ seance.tension_apres|default:"-" }}</td>
+                                        <td>{{ seance.machine|default:"-" }}</td>
+                                        <td>{{ seance.filtre|default:"-" }}</td>
+                                        <td>{{ seance.debit_sang_ml_min|default:"-" }}</td>
+                                        <td>{{ seance.debit_dialysat_ml_min|default:"-" }}</td>
+                                        <td>{{ seance.anticoagulant|default:"-" }}</td>
+                                        <td>{{ seance.uree_avant|default:"-" }}</td>
+                                        <td>{{ seance.uree_apres|default:"-" }}</td>
+                                        <td>{{ seance.creatinine_avant|default:"-" }}</td>
+                                        <td>{{ seance.creatinine_apres|default:"-" }}</td>
+                                        <td>
+                                            {% if seance.facturee %}
+                                                <span class="badge-modern status-done">Oui</span>
+                                            {% else %}
+                                                <span class="badge-modern status-cancel">Non</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-right ellipsis-cell">
+                                            <div class="dropdown dropdown-action">
+                                                <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
+                                                    <i class="fa fa-ellipsis-v"></i>
+                                                </a>
+                                                <div class="dropdown-menu dropdown-menu-right">
+                                                    {% if fonctionKey == 'infirmier' %}
+                                                        <a class="dropdown-item" href="{% url 'liste_parametrages_seance' seance.id %}">
+                                                            <i class="fa fa-cogs m-r-5"></i> Paramétrages
+                                                        </a>
+                                                        <a class="dropdown-item" href="{% url 'ajouter_parametrage_seance' seance.id %}">
+                                                            <i class="fa fa-plus m-r-5"></i> Ajouter paramétrage
+                                                        </a>
+                                                        <a class="dropdown-item" href="{% url 'ajouter_incident_dialyse' seance.id %}">
+                                                            <i class="fa fa-exclamation-triangle m-r-5"></i> Ajouter incident
+                                                        </a>
+                                                    
+                                                    {% elif fonctionKey == 'biomedicale' %}
+                                                        <a class="dropdown-item" href="{% url 'seance_dialyse_update' seance.prescription.id seance.id %}">
+                                                            <i class="fa fa-pencil m-r-5"></i> Modifier
+                                                        </a>
+                                                    
+                                                    
+                                                    {% endif %}
+
+                                                    <div class="dropdown-divider"></div>
+
+                                                    <a class="dropdown-item" href="{% url 'ajouter_consommation_seance' seance.id %}">
+                                                        <i class="fa fa-shopping-cart m-r-5"></i> Ajouter consommation
+                                                    </a>
+                                                    <a class="dropdown-item" href="{% url 'liste_consommations_seance' seance.id %}">
+                                                        <i class="fa fa-list m-r-5"></i> Voir consommations
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="28" class="text-center py-4">Aucune séance enregistrée.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination-wrap">
+                        <ul class="pagination">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ q|urlencode }}&page=1">Première</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Précédente</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Suivante</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.paginator.num_pages }}">Dernière</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+
+<script>
+    $(document).ready(function() {
+        var table = $('#myTable').DataTable({"dom": 'lrtip'});
+        $('#customSearch').on('keyup', function() {
+            table.search(this.value).draw();
+        });
+    });
+</script>
+</body>
+</html>

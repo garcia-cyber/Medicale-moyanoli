@@ -1,0 +1,415 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Paiement Dialyse</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg-page: #f4f8fc;
+            --surface: #ffffff;
+            --line: #dbe5ef;
+            --line-soft: #edf2f7;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-soft: #eff6ff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --success-bg: #ecfdf5;
+            --success-text: #166534;
+            --warning-bg: #fff7ed;
+            --warning-text: #9a3412;
+        }
+
+        body {
+            background: var(--bg-page);
+            color: var(--text);
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: var(--bg-page);
+        }
+
+        .content {
+            padding-top: 24px;
+            padding-bottom: 24px;
+        }
+
+        .page-title {
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 0;
+        }
+
+        .medical-badge {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dbeafe;
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.08);
+            font-size: 22px;
+        }
+
+        .card-clean,
+        .section-box {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .card-clean {
+            overflow: hidden;
+        }
+
+        .section-box {
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            background: #f9fbff;
+            border-bottom: 1px solid var(--line-soft);
+            padding: 14px 18px;
+            font-weight: 800;
+            color: #123c74;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .section-body {
+            padding: 18px;
+        }
+
+        .label-medical {
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 7px;
+            font-size: .92rem;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #d8e1ec;
+            min-height: 46px;
+            background: #fff;
+            box-shadow: none;
+        }
+
+        .form-control:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 0.18rem rgba(37, 99, 235, 0.08);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        .info-item {
+            background: #f8fbff;
+            border: 1px solid var(--line-soft);
+            border-radius: 14px;
+            padding: 14px 16px;
+        }
+
+        .info-item .k {
+            display: block;
+            font-size: .82rem;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .info-item .v {
+            display: block;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: .78rem;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        .status-pill.active {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-pill.pending {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid #fed7aa;
+        }
+
+        .help-strip {
+            background: #f8fbff;
+            border: 1px solid #e2ecff;
+            color: #49607d;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: .88rem;
+        }
+
+        .submit-section {
+            padding: 8px 0 0;
+        }
+
+        .submit-section .btn {
+            border-radius: 12px;
+            padding: 11px 22px;
+            font-weight: 800;
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+        }
+
+        .btn-register:hover {
+            background: linear-gradient(135deg, var(--primary-dark), #1e40af);
+        }
+
+        .field-errors {
+            margin-top: 6px;
+            font-size: .85rem;
+        }
+
+        .field-errors ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        @media (max-width: 991px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header mb-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-credit-card"></i></span>
+                            Paiement de la prescription de dialyse
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'prescriptions_dialyse' %}">Dialyse</a></li>
+                            <li class="breadcrumb-item active">Paiement</li>
+                        </ul>
+                    </div>
+                    <div class="col-auto ml-auto">
+                        <a href="{% url 'prescriptions_dialyse' %}" class="btn btn-light" style="border-radius:12px;">
+                            <i class="fa fa-arrow-left mr-1"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="border-radius: 12px;">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger" style="border-radius: 12px;">
+                    {% if form.non_field_errors %}
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    {% else %}
+                        Veuillez corriger les erreurs du formulaire.
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="card-clean">
+                <div class="section-box mb-0" style="border:0; border-radius:18px;">
+                    <div class="section-title">
+                        <i class="la la-file-text-o"></i> Prescription concernée
+                    </div>
+                    <div class="section-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="k">Patient</span>
+                                <span class="v">
+                                    {% if prescription.patient %}
+                                        {{ prescription.patient }}
+                                    {% else %}
+                                        {{ prescription.nom_patient_externe }}
+                                    {% endif %}
+                                </span>
+                                <span class="status-pill pending">Dialyse</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="k">Prestation</span>
+                                <span class="v">{{ prescription.prestation.libelle }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="k">Statut</span>
+                                <span class="v">{{ prescription.get_statut_display }}</span>
+                                {% if prescription.statut == "PAYEE" %}
+                                    <span class="status-pill active">Déjà soldée</span>
+                                {% else %}
+                                    <span class="status-pill pending">En attente</span>
+                                {% endif %}
+                            </div>
+                            <div class="info-item">
+                                <span class="k">Taux de change</span>
+                                <span class="v">{{ taux }} CDF/USD</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-box">
+                    <div class="section-title">
+                        <i class="la la-calculator"></i> Récapitulatif financier
+                    </div>
+                    <div class="section-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="k">Montant total</span>
+                                <span class="v">{{ montant_total_prescription|default:"0.00" }} USD</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="k">Total déjà versé</span>
+                                <span class="v">{{ total_verse_usd|default:"0.00" }} USD</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="k">Total réduction</span>
+                                <span class="v">{{ total_reduction_usd|default:"0.00" }} USD</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="k">Solde restant</span>
+                                <span class="v">{{ reste_initial|default:"0.00" }} USD</span>
+                            </div>
+                        </div>
+
+                        <div class="help-strip mt-3">
+                            Si le patient paie en CDF, le montant sera automatiquement converti en USD selon le taux de change affiché.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-box">
+                    <div class="section-title">
+                        <i class="la la-money"></i> Informations de paiement
+                    </div>
+                    <div class="section-body">
+                        <form method="POST" novalidate>
+                            {% csrf_token %}
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Montant versé</label>
+                                        {{ form.montant_verse }}
+                                        {% if form.montant_verse.errors %}
+                                            <div class="text-danger field-errors">{{ form.montant_verse.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Réduction</label>
+                                        {{ form.montant_reduction }}
+                                        {% if form.montant_reduction.errors %}
+                                            <div class="text-danger field-errors">{{ form.montant_reduction.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Devise</label>
+                                        {{ form.devise }}
+                                        {% if form.devise.errors %}
+                                            <div class="text-danger field-errors">{{ form.devise.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-2">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="label-medical">Service</label>
+                                        <input type="text" class="form-control" value="DIALYSE" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label class="label-medical">Caissier</label>
+                                        <input type="text" class="form-control" value="{{ request.user.get_full_name|default:request.user.username }}" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if form.devise.value == "CDF" %}
+                                <div class="alert alert-info mt-3" style="border-radius: 12px;">
+                                    Paiement saisi en CDF, conversion automatique appliquée pour le calcul en USD.
+                                </div>
+                            {% endif %}
+
+                            <div class="submit-section text-center">
+                                <button type="submit" class="btn btn-primary btn-register">
+                                    <i class="fa fa-check mr-2"></i> Enregistrer le paiement
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

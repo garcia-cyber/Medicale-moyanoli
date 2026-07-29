@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <title>Consommations de séance - Moyanoli ERP</title>
+
+    {% include 'back-end/includes/css.html' %}
+
+    <style>
+        :root {
+            --bg: #eef5fb;
+            --surface: #ffffff;
+            --surface-2: #f8fbff;
+            --line: #d7e2ee;
+            --line-soft: #edf3f8;
+            --primary: #1f7ae0;
+            --primary-2: #1459a8;
+            --primary-soft: #eaf4ff;
+            --text: #17324f;
+            --muted: #6b7b8e;
+            --success-bg: #eaf8ef;
+            --success-text: #157347;
+            --warning-bg: #fff6e8;
+            --warning-text: #9a5b00;
+            --danger-bg: #fdecec;
+            --danger-text: #b42318;
+            --info-bg: #eef6ff;
+            --info-text: #0f4c81;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f7fbff 0%, #edf5fb 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .page-wrapper, .content {
+            background: transparent;
+        }
+
+        .page-title {
+            font-size: 1.55rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .medical-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-soft), #dbeeff);
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cfe1f5;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .08);
+            font-size: 22px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(16, 24, 40, .05);
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-bottom: 1px solid var(--line-soft);
+            padding: 18px 22px;
+        }
+
+        .card-title {
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .muted { color: var(--muted); }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            border: none;
+            border-radius: 12px;
+            padding: 11px 18px;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(31, 122, 224, .15);
+        }
+
+        .btn-register:hover {
+            color: #fff;
+            background: linear-gradient(135deg, #1769c4, #124e94);
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--muted);
+        }
+
+        .section-box {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #f3f7fb;
+            color: #35506b;
+            border: 1px solid #e1e9f2;
+            font-weight: 700;
+            font-size: .8rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .table thead th {
+            background: #f7fbff;
+            color: #10395e;
+            font-weight: 800;
+            font-size: .82rem;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+            padding: 14px 12px;
+        }
+
+        .table tbody td {
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 12px 12px;
+            border-color: #eef3f8;
+            font-size: .92rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .78rem;
+            font-weight: 800;
+            border: 1px solid transparent;
+        }
+
+        .active {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border-color: #b7ebc6;
+        }
+
+        .danger {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border-color: #f6b1b1;
+        }
+
+        .info-badge {
+            background: var(--info-bg);
+            color: var(--info-text);
+            border: 1px solid #cfe2ff;
+        }
+
+        .warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid #ffd89b;
+        }
+    </style>
+</head>
+
+<body>
+<div class="main-wrapper">
+    {% include 'back-end/includes/header.html' %}
+    {% include 'back-end/includes/sidebar.html' %}
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title">
+                            <span class="medical-badge"><i class="la la-list"></i></span>
+                            Consommations de la séance
+                        </h3>
+                        <ul class="breadcrumb bg-transparent p-0 mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'liste_seances_dialyse' %}">Séances de dialyse</a></li>
+                            <li class="breadcrumb-item active">Consommations</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-box mb-4">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">Séance #{{ seance.numero_seance }}</h5>
+                        <p class="muted mb-0">
+                            {% if seance.prescription.patient %}
+                                Patient : {{ seance.prescription.patient.noms }}
+                            {% else %}
+                                Patient : {{ seance.prescription.nom_patient_externe|default:"Patient externe" }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <a href="{% url 'ajouter_consommation_seance' seance.id %}" class="btn btn-register">
+                            Ajouter une consommation
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <span class="pill">Total consommations : {{ consommations|length }}</span>
+                    <span class="pill">Statut séance : {{ seance.get_statut_display }}</span>
+                    <span class="pill">Prescription : {{ seance.prescription }}</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Détail des consommations</h4>
+                    <p class="muted mb-0">Liste des consommables sortis pour cette séance de dialyse.</p>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered align-middle">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Consommable</th>
+                                    <th>Référence</th>
+                                    <th>Catégorie</th>
+                                    <th>Quantité</th>
+                                    <th>Date utilisation</th>
+                                    <th>Prestation</th>
+                                    <th>Prix unitaire</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in consommations %}
+                                <tr>
+                                    <td><span class="pill">{{ forloop.counter }}</span></td>
+                                    <td>{{ c.consommable.nom }}</td>
+                                    <td>{{ c.consommable.reference|default:"-" }}</td>
+                                    <td>{{ c.consommable.categorie|default:"-" }}</td>
+                                    <td>{{ c.quantite }}</td>
+                                    <td>{{ c.date_utilisation|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if c.prestation %}
+                                            {{ c.prestation.libelle }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if c.prix_unitaire %}
+                                            {{ c.prix_unitaire }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if c.total %}
+                                            {{ c.total }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4">Aucune consommation enregistrée pour cette séance.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <a href="{% url 'liste_seances_dialyse' %}" class="btn btn-outline-secondary">Retour</a>
+                        <a href="{% url 'ajouter_parametrage_seance' seance.id %}" class="btn btn-outline-primary">Voir paramétrage</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'back-end/includes/js.html' %}
+</body>
+</html>

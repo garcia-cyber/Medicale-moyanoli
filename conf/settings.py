@@ -75,10 +75,7 @@ if DEBUG:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-else:
-    # Configuration pour la production (Render).
-    # Il est fortement conseillé d'utiliser dj-database-url pour lire l'URL de base de données Render.
-    import dj_database_url
+
    
 
 # --- VALIDATION DES MOTS DE PASSE ---
@@ -121,7 +118,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # --- AUTHENTIFICATION --- 
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGIN_URL = '/login/'
-LOGOUT_REDIRECT_URL = '/home/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 # --- SÉCURITÉ EN PRODUCTION ---
 if not DEBUG:

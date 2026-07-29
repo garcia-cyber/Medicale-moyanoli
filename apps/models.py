@@ -69,32 +69,95 @@ class Prestation(models.Model):
         ('OPHTA', 'Ophtalmologie'),
         ('PSY', 'Psychiatrie'),
         ('KINE', 'Rééducation / Kinésithérapie'),
-        ('MED', 'Acte Médical'),      
+        ('MED', 'Acte Médical'),       
         ('CHIR', 'Acte Chirurgical'),
         ('CONS_MAT', 'Consultation Maternité'), 
-        ('MAT', 'Forfait Maternité / Accouchement'), 
+        ('MAT', 'Forfait Maternité / Accouchement'),
+        ('DIALYSE', 'Dialyse'),
     ]
-    
-    libelle = models.CharField(max_length=200, verbose_name="Libellé")
-    categorie = models.CharField(max_length=10, choices=CATEGORIES, verbose_name="Catégorie")
-    prix = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix (USD)")
+
+    libelle = models.CharField(
+        max_length=200,
+        verbose_name="Libellé",
+    )
+    code = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Code de l'acte",
+        help_text="Code interne ou nomenclature (ex: HD4H, DPJ, etc.)",
+    )
+    categorie = models.CharField(
+        max_length=10,
+        choices=CATEGORIES,
+        verbose_name="Catégorie",
+    )
+    prix = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Prix (USD)",
+    )
+
+    # Valeurs de référence (uniquement pour le laboratoire)
     valeur_normale = models.CharField(
-        max_length=150, blank=True, null=True, 
+        max_length=150,
+        blank=True,
+        null=True, 
         verbose_name="Valeur Normale / Référence (Labo uniquement)",
-        help_text="Ex: 70-110 mg/dl, Négatif, etc."
+        help_text="Ex: 70-110 mg/dl, Négatif, etc.",
+    )
+
+    # Durée typique de l'acte (surtout pour DIALYSE et certains actes)
+    duree_typique_minutes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Durée typique (min)",
+        help_text="Durée normale de réalisation de l'acte (en minutes).",
+    )
+
+    # Paramètres de référence pour la dialyse
+    debit_sang_reference_ml_min = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Débit sang de référence (ml/min)",
+        help_text="Débit sanguin habituel pour cette prestation.",
+    )
+    debit_dialysat_reference_ml_min = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Débit dialysat de référence (ml/min)",
+    )
+
+    # Actif / inactif
+    actif = models.BooleanField(
+        default=True,
+        verbose_name="Actif",
+        help_text="Si décoché, la prestation n'apparaîtra plus dans les listes de sélection.",
     )
 
     def clean(self):
-        # Nettoyage : Si ce n'est pas du Laboratoire, on vide la valeur normale
+        # Valeur normale uniquement pour LABO
         if self.categorie != 'LABO':
             self.valeur_normale = None
-            
+
+        # Champs spécifiques dialyse uniquement pour DIALYSE
+        if self.categorie != 'DIALYSE':
+            self.duree_typique_minutes = None
+            self.debit_sang_reference_ml_min = None
+            self.debit_dialysat_reference_ml_min = None
+
+        # Prix cohérent
+        if self.prix < 0:
+            raise ValidationError({"prix": "Le prix ne peut pas être négatif."})
+
     def __str__(self):
         return f"{self.libelle} ({self.get_categorie_display()}) - {self.prix} USD"
 
     class Meta:
         verbose_name = "Prestation"
         verbose_name_plural = "Prestations"
+        ordering = ["categorie", "libelle"]
 
 
 # 5. SERVICE =======================================================
@@ -171,20 +234,452 @@ class Patient(models.Model):
 
     def __str__(self):
         return f"{self.noms} ({self.code_patient}) - {self.get_type_patient_display()}"
+# 
+# ====================================================================================================================
+#  mise en jour de la dialyse 
+#
+class PrescriptionDialyse(models.Model):
+  
+
+    STATUT = [
+        ("EN_ATTENTE_PAIEMENT", "En attente de paiement"),
+        ("PAYEE", "Payée"),
+        ("VALIDEE", "Validée par le médecin"),
+        ("REJETEE", "Rejetée"),
+        ("EN_COURS", "En cours"),
+        ("TERMINEE", "Terminée"),
+    ]
+
+    patient = models.ForeignKey(
+        "Patient",
+        on_delete=models.CASCADE,
+        related_name="prescriptions_dialyse",
+        null=True,
+        blank=True,
+        verbose_name="Patient (système)",
+        help_text="À remplir si le patient existe déjà dans le système.",
+    )
+    nom_patient_externe = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name="Nom du patient externe",
+        help_text="À remplir si le patient n'existe pas dans le système (externe).",
+    )
+
+  
+
+    # --- NOUVEAU : liaison avec Prestation ---
+    prestation = models.ForeignKey(
+        "Prestation",
+        on_delete=models.PROTECT,
+        related_name="prescriptions_dialyse",
+        verbose_name="Prestation de dialyse",
+        help_text="Prestation de catégorie Dialyse.",
+        null=True,  # temporairement, pour migrations
+        blank=True,
+    )
+
+    # --- NOUVEAU : montant total calculé ---
+    montant_total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Montant total (USD)",
+        editable=False,
+    )
+    # ----------------------------------------
+
+    date_debut = models.DateField(verbose_name="Date de début")
+    date_fin = models.DateField(null=True, blank=True, verbose_name="Date de fin")
+    frequence_par_semaine = models.PositiveSmallIntegerField(
+        help_text="Nombre de séances par semaine",
+        verbose_name="Fréquence (séances/semaine)",
+    )
+    duree_seance_minutes = models.PositiveIntegerField(
+        help_text="Durée typique d'une séance en minutes",
+        verbose_name="Durée de séance (min)",
+    )
+    objectif_poids_sec_kg = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Poids cible en kg",
+        verbose_name="Poids sec (kg)",
+    )
+
+    sexe_patient_externe = models.CharField(
+        max_length=1,
+        choices=[("M", "Masculin"), ("F", "Féminin")],
+        blank=True,
+        null=True,
+        verbose_name="Sexe (externe)",
+    )
+    age_patient_externe = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name="Âge (externe)",
+    )
+    telephone_patient_externe = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="Téléphone (externe)",
+    )
+
+    statut = models.CharField(
+        max_length=30,
+        choices=STATUT,
+        default="EN_ATTENTE_PAIEMENT",
+        verbose_name="Statut",
+    )
+    remarques = models.TextField(blank=True, verbose_name="Remarques")
+    active = models.BooleanField(default=True, verbose_name="Active")
+
+    def clean(self):
+        if not self.patient and not self.nom_patient_externe:
+            raise ValidationError(
+                "Vous devez renseigner soit un patient du système, soit le nom d'un patient externe."
+            )
+        if self.patient and self.nom_patient_externe:
+            raise ValidationError(
+                "Vous ne pouvez pas renseigner à la fois un patient du système et un patient externe."
+            )
+
+        # Optionnel : vérifier que la prestation est bien de catégorie DIALYSE
+        if self.prestation and self.prestation.categorie != "DIALYSE":
+            raise ValidationError(
+                {"prestation": "La prestation doit appartenir à la catégorie « Dialyse »."}
+            )
+
+    def save(self, *args, **kwargs):
+        # Calcul automatique du montant total à partir de la prestation
+        if self.prestation:
+            self.montant_total = self.prestation.prix
+        else:
+            self.montant_total = Decimal("0.00")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        if self.patient:
+            return f"Dialyse {self.prestation} - {self.patient} (Système)"
+        return f"Dialyse {self.prestation} - {self.nom_patient_externe} (Externe)"
+
+    class Meta:
+        verbose_name = "Prescription de dialyse"
+        verbose_name_plural = "Prescriptions de dialyse"
+#
+# =============================================================================================================
+class SeanceDialyse(models.Model):
+    STATUT = [
+        ("PLANIFIEE", "Planifiée"),
+        ("EN_COURS", "En cours"),
+        ("TERMINEE", "Terminée"),
+        ("ANNULEE", "Annulée"),
+    ]
+
+    prescription = models.ForeignKey(
+        PrescriptionDialyse,
+        on_delete=models.CASCADE,
+        related_name="seances",
+        verbose_name="Prescription",
+    )
+    numero_seance = models.PositiveSmallIntegerField(
+        help_text="Numéro de la séance dans la prescription",
+        verbose_name="Numéro de séance",
+    )
+    date_heure_debut = models.DateTimeField(default=timezone.now)
+    date_heure_fin = models.DateTimeField(null=True, blank=True)
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT,
+        default="PLANIFIEE",
+        verbose_name="Statut",
+    )
+
+    # Constantes de la séance (prescrites ou ajustées)
+    duree_prevue_minutes = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name="Durée prévue (min)"
+    )
+    poids_cible_fin_seance_kg = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name="Poids cible fin de séance (kg)",
+    )
+
+    # Données cliniques avant
+    poids_avant_kg = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name="Poids avant (kg)",
+    )
+    temperature_avant = models.DecimalField(
+        max_digits=4, decimal_places=1, null=True, blank=True,
+        verbose_name="Température avant (°C)",
+    )
+    pouls_avant = models.PositiveSmallIntegerField(null=True, blank=True)
+    tension_avant = models.CharField(max_length=20, null=True, blank=True)
+
+    # Paramètres machine
+    machine = models.CharField(
+        max_length=50, blank=True, null=True,
+        verbose_name="Machine utilisée",
+    )
+    filtre = models.CharField(
+        max_length=100, blank=True, null=True,
+        verbose_name="Type de filtre / dialyseur",
+    )
+    debit_sang_ml_min = models.PositiveIntegerField(null=True, blank=True)
+    debit_dialysat_ml_min = models.PositiveIntegerField(null=True, blank=True)
+    anticoagulant = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Ex: Héparine, dose",
+    )
+
+    # Données cliniques après
+    poids_apres_kg = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name="Poids après (kg)",
+    )
+    temperature_apres = models.DecimalField(
+        max_digits=4, decimal_places=1, null=True, blank=True,
+        verbose_name="Température après (°C)",
+    )
+    pouls_apres = models.PositiveSmallIntegerField(null=True, blank=True)
+    tension_apres = models.CharField(max_length=20, null=True, blank=True)
+
+    # Biologie (optionnel)
+    uree_avant = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+    uree_apres = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+    creatinine_avant = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+    creatinine_apres = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+
+    # Champs calculés
+    poids_perdu_kg = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True, editable=False
+    )
+    duree_reelle_minutes = models.PositiveIntegerField(
+        null=True, blank=True, editable=False
+    )
+
+    # Facturation
+    facturee = models.BooleanField(default=False, verbose_name="Facturée ?")
+
+    def save(self, *args, **kwargs):
+        # Calcul poids perdu
+        if self.poids_avant_kg is not None and self.poids_apres_kg is not None:
+            self.poids_perdu_kg = self.poids_avant_kg - self.poids_apres_kg
+
+        # Calcul durée réelle
+        if self.date_heure_debut and self.date_heure_fin:
+            delta = self.date_heure_fin - self.date_heure_debut
+            self.duree_reelle_minutes = int(delta.total_seconds() / 60)
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        nom_patient = (
+            str(self.prescription.patient)
+            if self.prescription.patient
+            else self.prescription.nom_patient_externe
+        )
+        return f"Séance #{self.numero_seance} - {nom_patient} - {self.date_heure_debut}"
+
+    class Meta:
+        verbose_name = "Séance de dialyse"
+        verbose_name_plural = "Séances de dialyse"
+        ordering = ["-date_heure_debut"]
+        unique_together = ["prescription", "numero_seance"]
+#
+#
+# =================================================================================================
+#
+class ConsommableDialyse(models.Model):
+    nom = models.CharField(
+        max_length=150,
+        verbose_name="Nom du consommable",
+        help_text="Ex: Ligne artério-veineuse, Filtre HF15, Aiguille 16G...",
+    )
+    reference = models.CharField(
+        max_length=50, blank=True, null=True, verbose_name="Référence"
+    )
+    categorie = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Ex: Lignes, Filtres, Aiguilles, Kits, Autres",
+    )
+    actif = models.BooleanField(default=True)
+    userConsommableDialyse = models.ForeignKey(User , on_delete=models.SET_NULL , null = True , blank = True , related_name="ConsommableDialyse")
+
+    def __str__(self):
+        return f"{self.nom} ({self.categorie or 'Dialyse'})"
+
+    class Meta:
+        verbose_name = "Consommable de dialyse"
+        verbose_name_plural = "Consommables de dialyse"
+        ordering = ["nom"]
+#
+#
+# ======================================================================================
+
+class ConsommationSeance(models.Model):
+    """
+    Consommation de matériel pour une séance donnée.
+    Peut être lié à une prestation pour la facturation.
+    """
+    seance = models.ForeignKey(
+        SeanceDialyse,
+        on_delete=models.CASCADE,
+        related_name="consommations",
+        verbose_name="Séance",
+    )
+    consommable = models.ForeignKey(
+        ConsommableDialyse,
+        on_delete=models.CASCADE,
+        related_name="consommations",
+        verbose_name="Consommable",
+    )
+    quantite = models.PositiveSmallIntegerField(default=1)
+    date_utilisation = models.DateTimeField(default=timezone.now)
+
+    # Lien optionnel vers une prestation (si ce consommable est facturé via une prestation)
+    prestation = models.ForeignKey(
+        "Prestation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="consommations_dialyse",
+        verbose_name="Prestation associée",
+    )
+
+    @property
+    def prix_unitaire(self):
+        return self.prestation.prix if self.prestation else None
+
+    @property
+    def total(self):
+        if self.prestation:
+            return self.prestation.prix * self.quantite
+        return None
+
+    def __str__(self):
+        return f"{self.consommable.nom} x{self.quantite} - {self.seance}"
+
+    class Meta:
+        verbose_name = "Consommation de séance"
+        verbose_name_plural = "Consommations de séance"
+
+
+
+class IncidentDialyse(models.Model):
+    GRAVITE = [
+        ("LEGER", "Léger"),
+        ("MODERE", "Modéré"),
+        ("GRAVE", "Grave"),
+    ]
+
+    seance = models.ForeignKey(
+        SeanceDialyse,
+        on_delete=models.CASCADE,
+        related_name="incidents",
+        verbose_name="Séance",
+    )
+    date_heure = models.DateTimeField(default=timezone.now)
+    type_incident = models.CharField(
+        max_length=100,
+        verbose_name="Type d'incident",
+        help_text="Ex: Hypotension, Crampes, Nausées, Vomissements, Malaise...",
+    )
+    userIncidentDialyse = models.ForeignKey(User , on_delete= models.SET_NULL , null = True , blank=True) 
+    gravite = models.CharField(
+        max_length=20,
+        choices=GRAVITE,
+        default="LEGER",
+        verbose_name="Gravité",
+    )
+    description = models.TextField(blank=True)
+    action_prise = models.TextField(blank=True)
+    soignant = models.CharField(
+        max_length=150, blank=True, null=True,
+        verbose_name="Soignant ayant renseigné",
+    )
+
+    def __str__(self):
+        return f"{self.type_incident} ({self.gravite}) - {self.seance}"
+
+    class Meta:
+        verbose_name = "Incident de dialyse"
+        verbose_name_plural = "Incidents de dialyse"
+        ordering = ["-date_heure"]
+
+
+class ParametrageSeance(models.Model):
+    seance = models.ForeignKey(
+        SeanceDialyse,
+        on_delete=models.CASCADE,
+        related_name="parametrages",
+        verbose_name="Séance",
+    )
+    minute_debut = models.PositiveSmallIntegerField(
+        help_text="Minute de début par rapport au début de séance (0, 30, 60...)"
+    )
+    minute_fin = models.PositiveSmallIntegerField(
+        help_text="Minute de fin par rapport au début de séance"
+    )
+
+    debit_sang_ml_min = models.PositiveIntegerField(null=True, blank=True)
+    debit_dialysat_ml_min = models.PositiveIntegerField(null=True, blank=True)
+    pression_arterielle = models.CharField(max_length=20, null=True, blank=True)
+    pression_veineuse = models.CharField(max_length=20, null=True, blank=True)
+    temperature_liquide = models.DecimalField(
+        max_digits=4, decimal_places=1, null=True, blank=True
+    )
+    remarques = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Paramétrage {self.minute_debit}-{self.minute_fin} - {self.seance}"
+
+    class Meta:
+        verbose_name = "Paramétrage de séance"
+        verbose_name_plural = "Paramétrages de séance"
+        ordering = ["seance", "minute_debut"]
+
+
+
+
+
 
 # 6. PATIENT =======================================================
 class Paiement(models.Model):
     CURRENCY = [('USD', 'USD'), ('CDF', 'CDF')]
     SERVICES = [
-        ('FICHE', 'Fiche'), ('CONSULTATION', 'Consultation'), ('LABO', 'Labo'),
-        ('ECHOGRAPHIE', 'Échographie'), ('RADIO', 'Radiographie'), ('SOIN', 'Soins'),
-        ('MATERNITE', 'Maternité'), ('DECES', 'Actes de décès'), ('EXAMENS', 'Examens'),
-        ('CHIRURGIE', 'Chirurgie'), ('CARTE_FIDELITE', 'Achat Carte de Fidélité'), 
-        ('PHARMACIE', 'Pharmacie'), ('EXAMEN_EXTERNE', 'Examen Externe'),
-        ('ENTREPRISE', 'Paiement Entreprise'), ('HOSPITALISATION', 'Hospitalisation')
+        ('FICHE', 'Fiche'),
+        ('CONSULTATION', 'Consultation'),
+        ('LABO', 'Labo'),
+        ('ECHOGRAPHIE', 'Échographie'),
+        ('RADIO', 'Radiographie'),
+        ('SOIN', 'Soins'),
+        ('MATERNITE', 'Maternité'),
+        ('DECES', 'Actes de décès'),
+        ('EXAMENS', 'Examens'),
+        ('CHIRURGIE', 'Chirurgie'),
+        ('CARTE_FIDELITE', 'Achat Carte de Fidélité'),
+        ('PHARMACIE', 'Pharmacie'),
+        ('EXAMEN_EXTERNE', 'Examen Externe'),
+        ('ENTREPRISE', 'Paiement Entreprise'),
+        ('HOSPITALISATION', 'Hospitalisation'),
+        ('DIALYSE', 'Dialyse'),
+        ('SEANCE_DIALYSE', 'Séance de dialyse'),
+        ('CONSOMMABLE_DIALYSE', 'Consommable dialyse'),
     ]
-    
-    # Relations
+
     bloc_op = models.ForeignKey('BlocOperatoire', on_delete=models.SET_NULL, null=True, blank=True, related_name='paiements')
     patient = models.ForeignKey('Patient', on_delete=models.CASCADE, null=True, blank=True)
     demande_examen_externe = models.ForeignKey('DemandeExamenExterne', on_delete=models.SET_NULL, null=True, blank=True, related_name='paiements')
@@ -196,19 +691,56 @@ class Paiement(models.Model):
     hospitalisation = models.ForeignKey('Hospitalisation', on_delete=models.SET_NULL, null=True, blank=True, related_name='paiements')
     compte_rendu = models.OneToOneField('CompteRenduAccouchement', on_delete=models.SET_NULL, null=True, blank=True, related_name='paiement')
 
-    # Champs de paiement
-    service = models.CharField(max_length=20, choices=SERVICES)
+    prescription_dialyse = models.ForeignKey(
+        'PrescriptionDialyse',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='paiements'
+    )
+    seance_dialyse = models.ForeignKey(
+        'SeanceDialyse',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='paiements'
+    )
+    consommation_dialyse = models.ForeignKey(
+        'ConsommationSeance',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='paiements'
+    )
+
+    service = models.CharField(max_length=30, choices=SERVICES)
     montant_verse = models.DecimalField(max_digits=15, decimal_places=2)
     montant_reduction = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     devise = models.CharField(max_length=3, choices=CURRENCY, default='USD')
     date_paiement = models.DateTimeField(default=timezone.now)
     caissier = models.ForeignKey(User, on_delete=models.PROTECT)
-    reste_a_payer = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), verbose_name="Dette / Reste à payer")
+    reste_a_payer = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Dette / Reste à payer"
+    )
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.service == 'DIALYSE' and not self.prescription_dialyse:
+            raise ValidationError("Le paiement de dialyse doit être lié à une prescription de dialyse.")
+
+        if self.service == 'SEANCE_DIALYSE' and not self.seance_dialyse:
+            raise ValidationError("Le paiement de séance doit être lié à une séance de dialyse.")
+
+        if self.service == 'CONSOMMABLE_DIALYSE' and not self.consommation_dialyse:
+            raise ValidationError("Le paiement consommable doit être lié à une consommation de séance.")
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
 
-        # --- LOGIQUE SERVICES STANDARDS ---
         if self.service == 'FICHE' and self.patient:
             self.patient.fiche_payee = True
             self.patient.save()
@@ -220,43 +752,41 @@ class Paiement(models.Model):
             self.patient.type_patient = 'FIDELE'
             self.patient.save()
 
-        # --- LOGIQUE HOSPITALISATION ---
         if self.hospitalisation:
             total_due = Decimal(str(self.hospitalisation.cout_total))
             paiements_existants = self.hospitalisation.paiements.exclude(pk=self.pk)
             total_deja_verse = paiements_existants.aggregate(Sum('montant_verse'))['montant_verse__sum'] or 0
             total_deja_reduit = paiements_existants.aggregate(Sum('montant_reduction'))['montant_reduction__sum'] or 0
-            
-            self.reste_a_payer = max(0, total_due - (total_deja_reduit + self.montant_reduction) - (total_deja_verse + self.montant_verse))
+            self.reste_a_payer = max(
+                Decimal('0.00'),
+                total_due - (total_deja_reduit + self.montant_reduction) - (total_deja_verse + self.montant_verse)
+            )
             self.hospitalisation.est_payee = (self.reste_a_payer <= 0)
             self.hospitalisation.save()
 
-        # --- LOGIQUE SESSIONS SOINS ---
         if self.session:
             tous_paiements = self.session.paiements.exclude(pk=self.pk)
             total_deja_verse = tous_paiements.aggregate(Sum('montant_verse'))['montant_verse__sum'] or 0
             total_deja_reduit = tous_paiements.aggregate(Sum('montant_reduction'))['montant_reduction__sum'] or 0
-            self.reste_a_payer = max(0, self.session.total_a_payer - (total_deja_reduit + self.montant_reduction) - (total_deja_verse + self.montant_verse))
+            self.reste_a_payer = max(
+                Decimal('0.00'),
+                self.session.total_a_payer - (total_deja_reduit + self.montant_reduction) - (total_deja_verse + self.montant_verse)
+            )
             self.session.est_payee = (self.reste_a_payer <= 0)
             self.session.save()
 
-        # --- LOGIQUE EXAMEN EXTERNE ---
         if self.demande_examen_externe:
             total_due = self.demande_examen_externe.total_a_payer
             paiements_existants = self.demande_examen_externe.paiements.exclude(pk=self.pk)
             total_deja_verse = paiements_existants.aggregate(Sum('montant_verse'))['montant_verse__sum'] or 0
-            self.reste_a_payer = max(0, total_due - (total_deja_verse + self.montant_verse))
+            self.reste_a_payer = max(
+                Decimal('0.00'),
+                total_due - (total_deja_verse + self.montant_verse)
+            )
             if self.reste_a_payer <= 0:
                 self.demande_examen_externe.statut = 'PAYE'
                 self.demande_examen_externe.save()
 
-        # --- LOGIQUE MATERNITE ---
-        if self.service == 'MATERNITE' and self.dossier_maternite:
-            if self.reste_a_payer <= 0:
-                self.dossier_maternite.est_paye = True
-                self.dossier_maternite.save()
-
-        # --- LOGIQUE ENTREPRISE ---
         if self.service == 'ENTREPRISE' and self.entreprise:
             montant_usd = self.montant_verse
             if self.devise == 'CDF':
@@ -267,6 +797,21 @@ class Paiement(models.Model):
             self.entreprise.dette_mensuelle = max(Decimal('0.00'), self.entreprise.dette_mensuelle - total_a_deduire)
             self.entreprise.save()
 
+        if self.service == 'DIALYSE' and self.prescription_dialyse:
+            total_due = getattr(self.prescription_dialyse, "montant_total", Decimal("0.00"))
+            paiements_existants = self.prescription_dialyse.paiements.exclude(pk=self.pk)
+            total_verse = paiements_existants.aggregate(Sum('montant_verse'))['montant_verse__sum'] or Decimal('0.00')
+            total_reduit = paiements_existants.aggregate(Sum('montant_reduction'))['montant_reduction__sum'] or Decimal('0.00')
+
+            self.reste_a_payer = max(
+                Decimal('0.00'),
+                total_due - (total_verse + self.montant_verse) - (total_reduit + self.montant_reduction)
+            )
+
+            if self.reste_a_payer <= 0:
+                self.prescription_dialyse.statut = 'PAYEE'
+                self.prescription_dialyse.save(update_fields=['statut'])
+
         super().save(*args, **kwargs)
 
         if is_new:
@@ -276,8 +821,8 @@ class Paiement(models.Model):
                 numero_facture=f"FAC-{timezone.now().strftime('%y%m%d')}-{self.id}"
             )
 
-
-
+    def __str__(self):
+        return f"{self.service} - {self.montant_verse} {self.devise}"
 
 # 8. FACTURE =======================================================
 class Facture(models.Model):

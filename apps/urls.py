@@ -8,8 +8,8 @@ urlpatterns =[
      # ===================================
      # page d'accueil login
 
-     path('', home , name = "home") ,
-     path('login/', login , name ='login') ,
+     path('', login , name = "login") ,
+    #  path('login/', login , name ='login') ,
      path('deco/', deco , name ='deco') ,
      path('dashboard/', dashboard , name="dashboard") ,
      path('reinitialiser-password/<int:user_id>/', views.force_reinitialiser_pass, name='force_pass'),
@@ -262,5 +262,32 @@ urlpatterns =[
     path('patient/<int:patient_id>/uploader-archive/', views.uploader_archive_pdf, name='uploader_archive'),
     path('patient/<int:patient_id>/archives/', views.liste_archives_patient, name='liste_archives_patient'),
     path('archives/registre/', views.toutes_les_archives, name='toutes_les_archives'),
+
+    # ===============================================
+    # DIALYSE
+    #
+    path("dialyse/", views.prescriptions_dialyse_list, name="prescriptions_dialyse"),
+    path("dialyse/modifier/<int:pk>/", views.modifier_prescription_dialyse, name="modifier_prescription_dialyse"),
+    path("dialyse/payer/<int:pk>/", views.payer_prescription_dialyse, name="payer_prescription_dialyse"),
+    path("dialyse/prescriptions/<int:pk>/",prescription_dialyse_detail,name="prescription_dialyse_detail") ,
+    path("dialyse/seance/ajouter/<int:pk>/", seance_dialyse_create, name="seance_dialyse_create"),
+    path("dialyse/seances/",liste_seances_dialyse,name="liste_seances_dialyse"),
+    path("dialyse/seances/<int:seance_id>/parametrage/",ajouter_parametrage_seance,name="ajouter_parametrage_seance"),
+    path("dialyse/seances/<int:seance_id>/parametrages_liste/",views.liste_parametrages_seance,name="liste_parametrages_seance"),
+    path("dialyse/prescriptions/<int:pk>/seances/<int:seance_id>/modifier/",views.seance_dialyse_update,name="seance_dialyse_update"),
+    path("dialyse/seance/<int:seance_id>/consommations/ajouter/", views.ajouter_consommation_seance, name="ajouter_consommation_seance"),
+    path("dialyse/seance/<int:seance_id>/consommations/", views.liste_consommations_seance, name="liste_consommations_seance"),
+    path("dialyse/consommables/", views.liste_consommables_dialyse, name="liste_consommables_dialyse"),
+    path("dialyse/consommables_dialyse/ajouter/", views.ajouter_consommable_dialyse, name="ajouter_consommable_dialyse"),
+    path("dialyse/consommables/<int:consommable_id>/modifier_dialyse/",views.modifier_consommable_dialyse,name="modifier_consommable_dialyse"),
+    path("incidents/", views.liste_incidents_dialyse, name="liste_incidents_dialyse"),
+    path("incidents/<int:seance_id>/ajouter/", views.ajouter_incident_dialyse, name="ajouter_incident_dialyse"),
+    path("incidents/<int:incident_id>/modifier/", views.modifier_incident_dialyse, name="modifier_incident_dialyse"),
+    path("incidents/<int:incident_id>/supprimer/", views.supprimer_incident_dialyse, name="supprimer_incident_dialyse"),
+    path(
+        "dialyse/prescription/<int:pk>/medecin/",
+        prescription_dialyse_medecin_detail,
+        name="prescription_dialyse_medecin_detail",
+    ),
 
  ]

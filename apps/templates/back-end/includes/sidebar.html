@@ -243,7 +243,13 @@
 
 
 
-
+<li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'prescriptions_dialyse' %}active{% endif %}"
+       href="{% url 'prescriptions_dialyse' %}">
+        <i class="fa fa-heartbeat"></i>
+        <span>Prescriptions dialyse</span>
+    </a>
+</li>
 
 
                 {% endif %}
@@ -288,6 +294,13 @@
     <a href="{% url 'liste_patients_urgence' %}">
         <i class="fas fa-user-injured"></i> 
         <span>Liste des Patients</span>
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'prescriptions_dialyse' %}active{% endif %}"
+       href="{% url 'prescriptions_dialyse' %}">
+        <i class="fa fa-heartbeat"></i>
+        <span>Prescriptions dialyse</span>
     </a>
 </li>
 <li>
@@ -383,10 +396,24 @@
                         </a>
                     </li>
 
+                    <li class="nav-item {% if request.resolver_match.url_name == 'liste_seances_dialyse' %}active{% endif %}">
+    <a class="nav-link" href="{% url 'liste_seances_dialyse' %}">
+        <i class="la la-heartbeat"></i>
+        <span>Séances de dialyse</span>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link" href="{% url 'liste_incidents_dialyse' %}">
+        <i class="la la-exclamation-triangle"></i>
+        <span>Incidents de dialyse</span>
+    </a>
+</li>
+
                   
                 {% endif %}
 
-            {% if fonctionKey == 'laborantin' or fonctionKey == 'technique' or fonctionKey == 'echographe' or fonctionKey == 'radiologue' or fonctionKey == 'imagiste' %}
+            {% if fonctionKey == 'laborantin'  or fonctionKey == 'technique' or fonctionKey == 'echographe' or fonctionKey == 'radiologue' or fonctionKey == 'imagiste' %}
 
                     <li class="menu-title"> <span>TECHNIQUE / LABO</span> </li>
                     <li><a href="{% url 'liste_examens_techniques' %}"><i class="la la-flask"></i> <span>Examens à réaliser</span></a></li>
@@ -479,6 +506,45 @@
             </li>
 
             {% endif %}
+            {% if fonctionKey == 'biomedicale' %}
+
+            
+<li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'prescriptions_dialyse' %}active{% endif %}"
+       href="{% url 'prescriptions_dialyse' %}">
+        <i class="fa fa-heartbeat"></i>
+        <span>Prescriptions dialyse</span>
+    </a>
+</li>
+
+<li class="nav-item {% if request.resolver_match.url_name == 'liste_seances_dialyse' %}active{% endif %}">
+    <a class="nav-link" href="{% url 'liste_seances_dialyse' %}">
+        <i class="la la-heartbeat"></i>
+        <span>Séances de dialyse</span>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link" href="{% url 'liste_consommables_dialyse' %}">
+        <i class="la la-flask"></i>
+        <span>Consommables dialyse</span>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link" href="{% url 'ajouter_consommable_dialyse' %}">
+        <i class="la la-plus-circle"></i>
+        <span>Ajouter consommable</span>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link" href="{% url 'liste_incidents_dialyse' %}">
+        <i class="la la-exclamation-triangle"></i>
+        <span>Incidents de dialyse</span>
+    </a>
+</li>
+            {%endif%}
 
             <li>
     <a href="{% url 'toutes_les_archives' %}">
