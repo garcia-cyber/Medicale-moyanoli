@@ -8,6 +8,8 @@ from django.core.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings 
 from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
+
 
 
 
@@ -918,7 +920,7 @@ class Consultation(models.Model):
         return self.consultation_payee
 
 # 11. DEMANDE EXAMEN ===============================================
-class DemandeExamen(models.Model):
+class DemandeExamen(models.Model): 
     STATUT = [
         ('EN_ATTENTE', 'En attente'),
         ('TERMINE', 'Terminé'),

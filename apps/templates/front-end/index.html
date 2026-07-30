@@ -1,329 +1,273 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="fr">
-
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hôpital | KITOKO </title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/jpeg" href="{% static 'front-end/assets/images/banner/logo.jpg' %}">
+    
+    <link rel="stylesheet" href="{% static 'front-end/assets/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'front-end/assets/css/animate.min.css' %}">
 
-  <title>Medical-Moyanoli | santé numérisée</title>
-  <meta name="title" content="Medical-Moyanoli">
-  <meta name="description" content="Plateforme de suivi médical et gestion de santé en ligne">
-
-  <link href="{% static 'front-end/assets/dr/logo.jpg' %}" rel="icon">
-  <link rel="stylesheet" href="{% static 'front-end/assets/css/style.css' %}">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
-
-  <style>
-    /* --- RÉGLAGES LOGO --- */
-    .logo {
-      display: flex !important;
-      align-items: center !important;
-      gap: 10px;
-      text-decoration: none; 
-      min-width: auto;
-    }
-
-    .logo-img {
-      width: 45px !important;
-      height: 45px !important;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #1d2a4d;
-    }
-
-    .logo-text {
-      font-family: 'League Spartan', sans-serif;
-      font-size: 20px;
-      font-weight: 700;
-      color: #1d2a4d;
-      line-height: 1;
-    }
-
-    /* --- FIX AUTHENTIFICATION & MENU MOBILE --- */
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .nav-open-btn {
-      display: none; /* Caché sur PC */
-      font-size: 30px;
-      color: #1d2a4d;
-    }
-
-    @media (max-width: 992px) {
-      .logo-text { font-size: 18px; }
-
-      .nav-open-btn {
-        display: block; /* Visible sur Mobile */
-      }
-
-      /* On s'assure que le bouton auth est visible */
-      .header-actions .btn {
-        display: flex !important;
-        padding: 10px !important;
-        min-width: auto !important;
-      }
-
-      /* Cache le texte "Authentification" sur mobile pour gagner de la place */
-      .header-actions .btn .span {
-        display: none;
-      }
-
-      .navbar {
-        position: fixed;
-        top: 0;
-        right: -300px;
-        background-color: white;
-        width: 100%;
-        max-width: 300px;
-        height: 100vh;
-        padding: 30px;
-        z-index: 100;
-        transition: 0.25s ease-in;
-        visibility: hidden;
-      }
-
-      .navbar.active {
-        right: 0;
-        visibility: visible;
-        transition: 0.25s ease-out;
-      }
-
-      .overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.5);
-        opacity: 0;
-        pointer-events: none;
-        transition: 0.15s ease;
-        z-index: 90;
-      }
-
-      .overlay.active {
-        opacity: 1;
-        pointer-events: all;
-      }
-    }
-
-    /* Affichage du texte "Authentification" sur tablette */
-    @media (min-width: 575px) and (max-width: 992px) {
-        .header-actions .btn .span {
-            display: block;
-            margin-inline-end: 5px;
+    <style>
+        :root { 
+            --deep-blue: #0f172a; 
+            --soft-blue: #1e293b; 
+            --accent: #00d2d3;  
+            --text-light: #f1f5f9;
+            --text-muted: #94a3b8;
+            --card-border: rgba(255, 255, 255, 0.08);
         }
-    }
 
-    /* --- HERO BANNER --- */
-    .hero-banner {
-      position: relative;
-      height: 450px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: var(--text-light); 
+            background-color: var(--deep-blue); 
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
 
-    .hero-banner .img-holder {
-      position: absolute;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      background: white;
-    }
+        h1, h2, h3, .navbar-brand { font-family: 'Montserrat', sans-serif; font-weight: 800; }
 
-    .hero-banner .one { top: 10%; left: 0; z-index: 7; width: 180px; }
-    .hero-banner .two { top: 0; right: 5%; z-index: 5; width: 160px; }
-    .hero-banner .three { bottom: 5%; left: 5%; z-index: 8; width: 150px; border: 4px solid white; }
-    .hero-banner .four { top: -5%; right: 30%; z-index: 4; width: 120px; opacity: 0.8; }
-    .hero-banner .five { bottom: 10%; right: 0; z-index: 6; width: 160px; }
-    .hero-banner .six { top: 30%; left: 30%; z-index: 3; width: 180px; opacity: 0.5; }
-    .hero-banner .seven { top: 15%; left: 20%; z-index: 4; width: 110px; opacity: 0.7; }
+        /* --- STYLE DU MENU ALIGNÉ --- */
+        .custom-navbar { 
+            background: #ffffff !important; 
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 0; /* Réduit pour l'alignement */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
 
-    @media (max-width: 992px) {
-      .hero-banner { height: auto; padding: 20px 0; }
-      .hero-banner .one { position: relative; width: 100%; }
-      .hero-banner .two, .hero-banner .three, .hero-banner .four,
-      .hero-banner .five, .hero-banner .six, .hero-banner .seven { display: none; }
-    }
-  </style>
+        .navbar-brand { 
+            display: flex; 
+            align-items: center; 
+            padding: 15px !important; /* Ajusté pour être sur la même ligne que le menu */
+            height: 80px; /* Hauteur fixe pour l'alignement */
+        }
+
+        .brand-container {
+            border-left: 5px solid var(--accent);
+            padding-left: 15px;
+            line-height: 1.2;
+        }
+
+        .brand-main-text {
+            color: var(--deep-blue);
+            font-size: 22px; /* Taille accrue comme demandé */
+            font-weight: 900;
+            display: block;
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
+        .brand-sub-text {
+            color: var(--accent);
+            font-size: 16px; /* Taille accrue comme demandé */
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: block;
+        }
+
+        .nav li a { 
+            color: #1e293b !important; 
+            font-weight: 700; 
+            text-transform: uppercase;
+            font-size: 13px;
+            padding: 30px 12px !important; /* Ajusté pour l'alignement vertical */
+            transition: 0.3s;
+        }
+
+        .nav li a:hover { color: var(--accent) !important; }
+
+        /* --- SECTIONS --- */
+        #home { height: 90vh; position: relative; display: flex; align-items: center; background-color: #000; overflow: hidden; }
+        .hero-img-bg { position: absolute; right: 0; top: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
+        .hero-overlay { position: absolute; width: 100%; height: 100%; background: linear-gradient(to top, #000 0%, #0008 100%); z-index: 1; }
+        .hero-content { position: relative; z-index: 2; }
+
+        section { padding: 100px 0; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); padding: 40px; border-radius: 24px; border: 1px solid var(--card-border); }
+        .accent-bar { width: 60px; height: 4px; background: var(--accent); margin-bottom: 30px; border-radius: 2px; }
+
+        .bio-img-container { position: relative; padding: 10px; }
+        .bio-img-container::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: 2px solid var(--accent); border-radius: 20px; transform: translate(-15px, 15px); z-index: 0;
+        }
+        .bio-img { border-radius: 20px; position: relative; z-index: 1; width: 100%; }
+
+        .form-control { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: white !important; height: 55px; border-radius: 12px; margin-bottom: 20px; }
+        .btn-main { background: var(--accent); color: white; font-weight: 700; padding: 15px 40px; border-radius: 12px; border: none; }
+
+        footer { padding: 60px 0; border-top: 1px solid var(--card-border); text-align: center; background: #0a0f1d; }
+
+        @media (max-width: 991px) {
+            .brand-main-text { font-size: 18px; }
+            .brand-sub-text { font-size: 14px; }
+            .nav li a { padding: 30px 8px !important; font-size: 11px; }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-brand { height: auto; }
+            .nav li a { padding: 15px !important; }
+            #home { text-align: center; padding-top: 100px; }
+        }
+    </style>
 </head>
 
-<body id="top">
+<body data-spy="scroll" data-target=".navbar-collapse">
 
-  <header class="header" data-header>
-    <div class="container">
-      <a href="#" class="logo">
-        <img src="{% static 'front-end/assets/dr/logo.jpeg' %}" alt="Logo" class="logo-img">
-        <span class="logo-text">Medical-Moyanoli</span>
-      </a>
-
-      <nav class="navbar" data-navbar>
-        <div class="wrapper">
-          <a href="#" class="logo">Moyanoli</a>
-          <button class="nav-close-btn" aria-label="close menu" data-nav-toggler>
-            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
-          </button>
-        </div>
-        <ul class="navbar-list">
-          <li><a href="#home" class="navbar-link" data-nav-link>Accueil</a></li>
-          <li><a href="#about" class="navbar-link" data-nav-link>À propos</a></li>
-          <li><a href="#services" class="navbar-link" data-nav-link>Services</a></li>
-          <li><a href="#contact" class="navbar-link" data-nav-link>Contact</a></li>
-        </ul>
-      </nav>
-
-      <div class="header-actions">
-        <button class="header-action-btn" title="Recherche"><ion-icon name="search-outline"></ion-icon></button>
-
-        <!-- BOUTON AUTHENTIFICATION (Corrigé pour visibilité mobile) -->
-        <a href="{% url 'login' %}" class="btn has-before">
-          <span class="span">Authentification</span>
-          <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
-        </a>
-
-        <button class="header-action-btn nav-open-btn" aria-label="open menu" data-nav-toggler>
-          <ion-icon name="menu-outline" aria-hidden="true"></ion-icon>
-        </button>
-      </div>
-
-      <div class="overlay" data-nav-toggler data-overlay></div>
-    </div>
-  </header>
-
-  <main>
-    <article>
-      <!-- HERO -->
-      <section class="section hero has-bg-image" id="home" aria-label="home">
+    <nav class="navbar navbar-fixed-top custom-navbar">
         <div class="container">
-          <div class="hero-content">
-            <h1 class="h1 section-title">Numérisez le suivi médical de votre famille</h1>
-            <p class="hero-text">
-              Recevez vos résultats, ordonnances et rappels de vaccins instantanément via SMS ou notification. La santé connectée en RDC.
-            </p>
-            <a href="#services" class="btn has-before">
-              <span class="span">Découvrir nos centres</span>
-              <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon>
-            </a>
-          </div>
-
-          <figure class="hero-banner">
-            <div class="img-holder one"><img src="{% static 'front-end/assets/dr/1.jpg' %}" alt="Photo 1" class="img-cover"></div>
-            <div class="img-holder two"><img src="{% static 'front-end/assets/dr/2.jpg' %}" alt="Photo 2" class="img-cover"></div>
-            <div class="img-holder three"><img src="{% static 'front-end/assets/dr/3.jpg' %}" alt="Photo 3" class="img-cover"></div>
-            <div class="img-holder four"><img src="{% static 'front-end/assets/dr/4.jpg' %}" alt="Photo 4" class="img-cover"></div>
-            <div class="img-holder five"><img src="{% static 'front-end/assets/dr/5.jpg' %}" alt="Photo 5" class="img-cover"></div>
-            <div class="img-holder six"><img src="{% static 'front-end/assets/dr/6.jpg' %}" alt="Photo 6" class="img-cover"></div>
-            <div class="img-holder seven"><img src="{% static 'front-end/assets/dr/7.jpg' %}" alt="Photo 7" class="img-cover"></div>
-          </figure>
-        </div>
-      </section>
-
-      <!-- SERVICES -->
-      <section class="section category" id="services" aria-label="category">
-        <div class="container">
-          <p class="section-subtitle">Nos Services Digitaux</p>
-          <h2 class="h2 section-title">Tout votre parcours santé en un clic</h2>
-          <ul class="grid-list">
-            <li>
-              <div class="category-card" style="--color: 170, 75%, 41%">
-                <div class="card-icon"><ion-icon name="phone-portrait-outline" size="large"></ion-icon></div>
-                <h3 class="h3"><a href="#" class="card-title">Dossier Médical</a></h3>
-                <p class="card-text">Historique de santé accessible partout, même hors ligne.</p>
-              </div>
-            </li>
-            <li>
-              <div class="category-card" style="--color: 351, 83%, 61%">
-                <div class="card-icon"><ion-icon name="card-outline" size="large"></ion-icon></div>
-                <h3 class="h3"><a href="#" class="card-title">Paiement Mobile</a></h3>
-                <p class="card-text">Payez vos factures médicales en toute sécurité en ligne.</p>
-              </div>
-            </li>
-            <li>
-              <div class="category-card" style="--color: 229, 75%, 58%">
-                <div class="card-icon"><ion-icon name="videocam-outline" size="large"></ion-icon></div>
-                <h3 class="h3"><a href="#" class="card-title">Téléconsultation</a></h3>
-                <p class="card-text">Échangez avec un spécialiste sans vous déplacer.</p>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- ABOUT -->
-      <section class="section about" id="about" aria-label="about">
-        <div class="container">
-          <figure class="about-banner">
-            <div class="img-holder" style="--width: 520; --height: 500;">
-              <img src="{% static 'front-end/assets/dr/3.jpg' %}" width="520" height="500" loading="lazy" alt="Hôpital" class="img-cover">
+            <div class="navbar-header">
+                <button class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar" style="background-color: var(--deep-blue);"></span>
+                    <span class="icon-bar" style="background-color: var(--deep-blue);"></span>
+                    <span class="icon-bar" style="background-color: var(--deep-blue);"></span>
+                </button>
+                <a href="#" class="navbar-brand">
+                    <div class="brand-container">
+                        <span class="brand-main-text">CENTRE HOSPITALIER</span>
+                        <span class="brand-sub-text">KITOKO.</span>
+                    </div>
+                </a>
             </div>
-          </figure>
-          <div class="about-content">
-            <p class="section-subtitle">Pourquoi nous choisir ?</p>
-            <h2 class="h2 section-title">Le digital au service de la <span class="span">Santé pour tous</span></h2>
-            <p class="section-text">
-              Medical-Moyanoli réduit les délais de prise en charge grâce à un identifiant unique facilitant le suivi entre établissements.
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#home">Accueil</a></li>
+                    <li><a href="#presentation">L'Institution</a></li>
+                    <li><a href="#biographie">Le Promoteur</a></li>
+                    <li><a href="#contact">PRENDRE RDV</a></li>
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'panel' %}">DASHBOARD</a></li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}">CONNEXION</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section id="home">
+        <img src="{% static 'front-end/assets/images/banner/logo2.jpg' %}" class="hero-img-bg" alt="Banner">
+        <div class="hero-overlay"></div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 hero-content">
+                    <h1 class="wow fadeInUp" data-wow-delay="0.4s" style="font-size: clamp(35px, 6vw, 65px); line-height: 1.1;">
+                        La Technologie au<br><span style="color:var(--accent)">Service de la Vie.</span>
+                    </h1>
+                    <p class="wow fadeInUp" data-wow-delay="0.6s" style="font-size: 20px; color: var(--text-muted); margin: 30px 0;">
+                        Le Centre Hospitalier KITOKO : l'excellence médicale internationale au cœur de Kinshasa, alliant innovation et humanité.
+                    </p>
+                    <a href="#presentation" class="btn-main wow fadeInUp" data-wow-delay="0.8s">DÉCOUVRIR NOS SERVICES</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="presentation" style="background: #111827;">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <h2 style="color:white">L'INSTITUTION</h2>
+                    <div class="accent-bar"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card wow fadeInLeft">
+                        <h3 style="color: var(--accent); margin-top: 0;">Historique</h3>
+                        <p>Lancé le <strong>11 mars 2024</strong> au sein de la Fondation KITOKO, notre établissement se situe au croisement des avenues Ngungu et du Marché à Kinshasa.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card wow fadeInRight">
+                        <h3 style="color: var(--accent); margin-top: 0;">Infrastructure</h3>
+                        <ul class="list-unstyled">
+                            <li><i class="fa fa-check" style="color:var(--accent)"></i> 50 Lits d'hospitalisation de haut standing</li>
+                            <li><i class="fa fa-check" style="color:var(--accent)"></i> Bloc opératoire et Urgences 24h/7</li>
+                            <li><i class="fa fa-check" style="color:var(--accent)"></i> Maternité, Pédiatrie et Médecine Interne</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="biographie">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <h2 style="color:white">LE PROMOTEUR LAWRENCE KITOKO</h2>
+                    <div class="accent-bar" style="margin: 0 auto 50px;"></div>
+                </div>
+            </div>
+            <div class="row" style="display: flex; align-items: center; flex-wrap: wrap;">
+                <div class="col-md-4 wow fadeInLeft">
+                    <div class="bio-img-container">
+                        <img src="{% static 'front-end/hopital/kitoko.jpg' %}" class="bio-img" alt="Lawrence Kitoko">
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="glass-card wow fadeInUp">
+                        <p style="text-align: justify; font-size: 17px; font-weight: 600;">
+                            Originaire de la Province de Tshopo et né à Kinshasa, Lawrence Kitoko vit entre le Congo et la France. Diplômé en kinésithérapie (Bruxelles), ostéopathie (Louvain) et santé publique (UCL).
+                        </p>
+                        <p style="text-align: justify; color: var(--text-muted); margin-top: 15px;">
+                            Lawrence KITOKO‑LUBULA est un kinésithérapeute internationalement formé, spécialisé en rééducation fonctionnelle, neurologique et sportive, disposant d’une solide expérience clinique acquise en Europe, au Canada et en Afrique. Titulaire d’un Master en Santé Publique et engagé dans un parcours doctoral dans le même domaine, il développe une approche thérapeutique basée sur les standards scientifiques internationaux, l’innovation technologique et l’amélioration continue de la qualité des soins. 
+                            <br><br>
+                            Ancien praticien auprès de l’équipe nationale espoir de la RDC et collaborateur de plusieurs structures sportives professionnelles en Belgique, il possède une expertise reconnue dans la prise en charge des pathologies complexes. Entrepreneur du secteur médical, il est également le propriétaire du centre PHYSIOKIN – PARIS.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" style="background: #0a0f1d;">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-5">
+                    <h2 style="color:white">CONTACTS</h2>
+                    <div class="accent-bar"></div>
+                    <div style="font-size: 16px; margin-top: 30px;">
+                        <p><i class="fa fa-map-marker" style="color:var(--accent); width:25px"></i> 102, Avenue Ngungu, Quartier Pende, Commune de Kinshasa, RDC</p>
+                        <p><i class="fa fa-envelope" style="color:var(--accent); width:25px"></i> lawrencekitoko@hotmail.com</p>
+                        <p><i class="fa fa-phone" style="color:var(--accent); width:25px"></i> +33 6 05 52 19 34 (FR) / +243 976 159 242 (RDC)</p>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <form action="#" method="post" class="glass-card">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6"><input type="text" name="nom" class="form-control" placeholder="Nom complet" required></div>
+                            <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="Email" required></div>
+                        </div>
+                        <textarea name="message" class="form-control" rows="4" placeholder="Comment pouvons-nous vous aider ?" required></textarea>
+                        <button type="submit" class="btn-main" style="width:100%">ENVOYER LE MESSAGE</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p style="font-weight: 700; font-size: 20px; color:white;">CHK<span style="color:var(--accent)">.</span></p>
+            <p style="color: var(--text-muted); font-size: 13px;">
+                102, Avenue Ngungu, Quartier Pende, Commune de Kinshasa, RDC<br>
+                &copy; 2026 Centre Hospitalier KITOKO | Lawrence Kitoko.
             </p>
-            <ul class="about-list">
-              <li class="about-item"><ion-icon name="checkmark-circle-outline"></ion-icon><span>Médecins certifiés</span></li>
-              <li class="about-item"><ion-icon name="checkmark-circle-outline"></ion-icon><span>Données 100% sécurisées</span></li>
-              <li class="about-item"><ion-icon name="checkmark-circle-outline"></ion-icon><span>Disponible 24h/7j</span></li>
-            </ul>
-          </div>
         </div>
-      </section>
-    </article>
-  </main>
+    </footer>
 
-  <!-- FOOTER -->
-  <footer class="footer" id="contact">
-    <div class="footer-top section">
-      <div class="container grid-list">
-        <div class="footer-brand">
-          <a href="#" class="logo">Medical-Moyanoli</a>
-          <p class="footer-brand-text">Innover pour la santé en République Démocratique du Congo.</p>
-          <div class="wrapper"><span class="span">Email:</span><a href="mailto:contact@moyanoli.com" class="footer-link">contact@moyanoli.com</a></div>
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <div class="container">
-        <p class="copyright">&copy; 2026 Medical-Moyanoli. Tous droits réservés.</p>
-      </div>
-    </div>
-  </footer>
-
-  <a href="#top" class="back-top-btn" aria-label="back to top" data-back-top-btn>
-    <ion-icon name="chevron-up" aria-hidden="true"></ion-icon>
-  </a>
-
-  <script>
-    'use strict';
-    const navTogglers = document.querySelectorAll("[data-nav-toggler]");
-    const navbar = document.querySelector("[data-navbar]");
-    const overlay = document.querySelector("[data-overlay]");
-
-    const toggleNavbar = function () {
-      navbar.classList.toggle("active");
-      overlay.classList.toggle("active");
-    }
-
-    navTogglers.forEach(toggler => {
-      toggler.addEventListener("click", toggleNavbar);
-    });
-  </script>
-
-  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-
+    <script src="{% static 'front-end/assets/js/jquery.js' %}"></script>
+    <script src="{% static 'front-end/assets/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'front-end/assets/js/wow.min.js' %}"></script>
+    <script>new WOW().init();</script>
 </body>
 </html>
