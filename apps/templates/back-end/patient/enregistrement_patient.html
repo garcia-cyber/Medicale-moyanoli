@@ -67,6 +67,7 @@
                                             <th>Matricule</th>
                                             <th>Patient</th>
                                             <th>Contact</th>
+                                            <th>profession</th>
                                             <th>Âge</th>
                                             <th>Service</th>
                                             <th>Type</th>
@@ -83,6 +84,7 @@
                                                 <div style="font-size: 0.75rem; color: #a0aec0;">{{ patient.date_creation|date:"d/m/Y" }}</div>
                                             </td>
                                             <td>{{ patient.telephone }}</td>
+                                            <td>{{ patient.profession }}</td>
                                             <td>{{ patient.age }} ans</td>
                                             <td><span class="badge badge-modern" style="color: #3182ce; background: #ebf8ff;">{{ patient.service }}</span></td>
                                             <td>

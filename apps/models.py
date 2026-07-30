@@ -189,6 +189,7 @@ class Patient(models.Model):
     age = models.CharField(max_length=30)
     adresse = models.TextField()
     telephone = models.CharField(max_length=20)
+    profession = models.CharField(max_length= 30, null = True , blank= True)  
     
     # 2. Gestion financière
     type_patient = models.CharField(max_length=15, choices=TYPE_CHOICES, default='SIMPLE')

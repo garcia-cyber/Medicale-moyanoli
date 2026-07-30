@@ -460,7 +460,6 @@ def modifier_service(request, pk):
 @login_required
 def enregistrement_patient(request):
     # Optimisation : On charge les patients pour le tableau.
-    # Note : Si la liste devient très longue, pense à ajouter un paginator plus tard.
     patients = Patient.objects.select_related('entreprise', 'created_by').all().order_by('-date_creation')
     
     if request.method == 'POST':
@@ -476,7 +475,10 @@ def enregistrement_patient(request):
                 
                 patient.save()
                 messages.success(request, f"Patient {patient.noms} enregistré avec succès.")
-                return redirect('enregistrement_patient')
+                
+                # REDIRECTION VERS LE PAIEMENT DE LA FICHE AVEC L'ID DU PATIENT
+                return redirect('payer_fiche', patient_id=patient.id)
+            
             except Exception as e:
                 messages.error(request, f"Erreur lors de l'enregistrement : {str(e)}")
         else:
@@ -487,9 +489,11 @@ def enregistrement_patient(request):
     else:
         form = PatientForm()
 
+
     # Gestion du rôle pour le menu et les accès
     role_obj = Fonction.objects.filter(userKey=request.user).first()
     fonctionKey = role_obj.fonctionKey.roleName if (role_obj and role_obj.fonctionKey) else "Invité"
+
 
     return render(request, 'back-end/patient/enregistrement_patient.html', {
         'patients': patients,
@@ -562,6 +566,7 @@ def payer_fiche(request, patient_id):
     config = ConfigurationHopital.objects.first()
     taux = config.taux_usd_en_cdf if config else Decimal('2800.00')
 
+
     # 1. Récupérer la prestation "Fiche"
     try:
         prestation_fiche = Prestation.objects.get(categorie='ADM', libelle__icontains="Fiche")
@@ -574,6 +579,7 @@ def payer_fiche(request, patient_id):
     
     prix_fiche_usd = Decimal(str(prestation_fiche.prix))
 
+
     # 2. Calcul du cumul déjà payé
     paiements_existants = Paiement.objects.filter(patient=patient, service='FICHE')
     total_deja_paye_usd = Decimal('0.00')
@@ -584,15 +590,19 @@ def payer_fiche(request, patient_id):
         else:
             total_deja_paye_usd += p.montant_verse
 
+
     reste_a_payer_usd = prix_fiche_usd - total_deja_paye_usd
+
 
     if request.method == 'POST':
         montant_saisi = Decimal(request.POST.get('montant', 0))
         devise = request.POST.get('devise')
 
+
         montant_test_usd = montant_saisi
         if devise == 'CDF':
             montant_test_usd = montant_saisi / taux
+
 
         if montant_test_usd > (reste_a_payer_usd + Decimal('0.01')):
             messages.error(request, f"Le montant dépasse le reste à payer ({reste_a_payer_usd:.2f} USD).")
@@ -618,11 +628,14 @@ def payer_fiche(request, patient_id):
             else:
                 messages.success(request, f"Paiement de {montant_saisi} {devise} enregistré. Reste : {(prix_fiche_usd - nouveau_total_usd):.2f} USD")
             
-            return redirect('enregistrement_patient')
+            # REDIRECTION VERS LA SAISIE DES SIGNES VITAUX AVEC LE MÊME PATIENT
+            return redirect('saisir_signes', patient_id=patient.id)
+
 
     # ... reste du contexte ...
-    role = Fonction.objects.filter(userKey = request.user).first()
+    role = Fonction.objects.filter(userKey=request.user).first()
     fonctionKey = role.fonctionKey.roleName if role else None
+
 
     context = {
         'patient': patient,
@@ -631,11 +644,10 @@ def payer_fiche(request, patient_id):
         'taux': taux,
         'prix_fiche': prix_fiche_usd,
         'libelle_prestation': prestation_fiche.libelle,
-        'fonctionKey' : fonctionKey,
-        'deja_paye': patient.fiche_payee # Pour l'utiliser dans le template si besoin
+        'fonctionKey': fonctionKey,
+        'deja_paye': patient.fiche_payee  # Pour l'utiliser dans le template si besoin
     }
     return render(request, 'back-end/finance/payer_fiche.html', context)
-
 # 21
 # ==================================================================================================
 # HISTORIQUE DE PAIEMENT

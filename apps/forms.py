@@ -223,7 +223,7 @@ class PatientForm(forms.ModelForm):
     class Meta:
         model = Patient
         # On exclut code_patient et created_by car ils sont gérés automatiquement dans le modèle
-        fields = ['noms', 'sexe', 'age', 'adresse', 'telephone', 'service']
+        fields = ['noms', 'sexe', 'age', 'adresse', 'telephone', 'service','profession']
         
         widgets = {
             'noms': forms.TextInput(attrs={
@@ -249,6 +249,7 @@ class PatientForm(forms.ModelForm):
             'service': forms.Select(attrs={
                 'class': 'form-control'
             }),
+            'profession': forms.TextInput(attrs={'class':'forms-control'})
         }
 
     def __init__(self, *args, **kwargs):
@@ -570,13 +571,14 @@ class LotPharmacieForm(forms.ModelForm):
 class PatientForm(forms.ModelForm):
     class Meta:
         model = Patient
-        fields = ['noms', 'sexe', 'age', 'adresse', 'telephone', 'entreprise', 'service']
+        fields = ['noms', 'sexe', 'age', 'adresse', 'telephone', 'entreprise', 'service','profession']
         widgets = {
             'noms': forms.TextInput(attrs={'class': 'form-control'}),
             'sexe': forms.Select(attrs={'class': 'form-control'}),
             'age': forms.TextInput(attrs={'class': 'form-control'}),
             'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
+            'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'entreprise': forms.Select(attrs={'class': 'form-control'}),
             'service': forms.Select(attrs={'class': 'form-control'}), # Liste déroulante des services
         }
